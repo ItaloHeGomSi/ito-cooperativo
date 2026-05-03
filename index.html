@@ -426,15 +426,12 @@
         </select>
       </div>
     </div>
-    <div class="field" style="margin-top:1.25rem">
-      <label>Seu apelido <span style="font-size:0.6rem;color:var(--text-muted);font-weight:400;letter-spacing:0">(opcional)</span></label>
-      <input type="text" id="nickname" placeholder="Como quer ser chamado" maxlength="20">
-    </div>
     <button class="btn btn-primary" onclick="startGame()" style="margin-top:0.25rem">Revelar Carta →</button>
     <button class="btn btn-secondary" onclick="document.getElementById('modal-how').classList.add('open')">📖 Como jogar</button>
 
     <div class="seed-note">
       🔑 <strong>Mesmo código = mesma partida</strong><br>
+      Todos recebem o mesmo tema e seus números específicos, gerados offline. Sem internet!
     </div>
   </div>
 </div>
@@ -762,8 +759,6 @@ function updatePlayerSelect() {
 }
 
 function playerLabel(num) {
-  if (num === state.myPlayerNum && state.nickname)
-    return `Jogador ${num} — ${state.nickname}`;
   return `Jogador ${num}`;
 }
 
@@ -780,7 +775,7 @@ function startGame() {
     alert(`Você não pode ser Jogador ${myPlayerNum} em uma partida de ${numPlayers}!`); return;
   }
 
-  const nickname = document.getElementById('nickname').value.trim();
+  const nickname = '';
   const rng = mulberry32(hashCode(code));
 
   // Sorteia um dos 20 grupos de 5 temas (0–19)
