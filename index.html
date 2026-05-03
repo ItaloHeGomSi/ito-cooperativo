@@ -257,7 +257,11 @@
         </select>
       </div>
     </div>
-    <button class="btn btn-primary" onclick="joinRoom()" style="margin-top:1.25rem">Entrar na Sala →</button>
+    <div class="field" style="margin-top:1.25rem">
+      <label>Seu Nome</label>
+      <input type="text" id="nickname" placeholder="Como quer ser chamado" maxlength="20">
+    </div>
+    <button class="btn btn-primary" onclick="joinRoom()">Entrar na Sala →</button>
     <button class="btn btn-secondary" onclick="document.getElementById('modal-how').classList.add('open')">📖 Como jogar</button>
     <div class="seed-note" style="margin-top:1rem">
       🔑 <strong>Mesmo código = mesma sala.</strong><br>
@@ -406,8 +410,8 @@
     <div class="section-tag">Ordem correta (do menor ao maior)</div>
     <div id="correct-order-list"></div>
     <p class="compare-note">📊 Compare com os amigos para ver quem acertou mais posições!</p>
-    <button class="btn btn-primary" onclick="newRound()">🔄 Nova Rodada</button>
-    <button class="btn btn-secondary" onclick="leaveRoom()">Sair da sala</button>
+    <button class="btn btn-primary" id="new-round-btn" onclick="newRound()">🔄 Nova Rodada</button>
+    <button class="btn btn-danger" onclick="leaveRoom()">Sair da sala</button>
   </div>
 </div>
 
@@ -572,10 +576,10 @@ const THEMES = [
 // STATE
 // ══════════════════════════════════
 const state = {
-  gameCode:'', numPlayers:4, myPlayerNum:1, isHost:false,
-  groupIdx:0, groupThemes:[], firstThemeNum:1, lastThemeNum:5,
+  gameCode:'', numPlayers:4, myPlayerNum:1, nickname:'', isHost:false,
+  round:1, groupIdx:0, groupThemes:[], firstThemeNum:1, lastThemeNum:5,
   playerNumbers:[], myNumber:0, theme:null, selectedGroupLocal:null,
-  userOrder:[]
+  userOrder:[], playerNames:{}
 };
 
 // ══════════════════════════════════
@@ -618,8 +622,8 @@ function copyCode() {
   navigator.clipboard?.writeText(state.gameCode).catch(() => {});
   toast('Código copiado: ' + state.gameCode);
 }
-function computeGame(code, numPlayers) {
-  const rng = mulberry32(hashCode(code));
+function computeGame(code, numPlayers, round = 1) {
+  const rng = mulberry32(hashCode(code + '|r' + round));
   const groupIdx = Math.floor(rng() * 20);
   const pool = Array.from({length:100},(_,i)=>i+1);
   for (let i = pool.length-1; i > 0; i--) {
@@ -641,6 +645,7 @@ async function joinRoom() {
     alert(`Você não pode ser Jogador ${myPlayerNum} em uma partida de ${numPlayersInput}!`); return;
   }
 
+  const nickname = document.getElementById('nickname').value.trim() || `Jogador ${myPlayerNum}`;
   const roomRef = db.ref(`rooms/${code}`);
   let numPlayers = numPlayersInput;
 
@@ -650,7 +655,7 @@ async function joinRoom() {
 
     if (!existing) {
       // Criar sala nova
-      await roomRef.set({ numPlayers, status:'lobby', hostPlayer:myPlayerNum, createdAt:Date.now() });
+      await roomRef.set({ numPlayers, status:'lobby', hostPlayer:myPlayerNum, round:1, createdAt:Date.now() });
     } else {
       if (existing.status !== 'lobby') { alert('Esta partida já começou!'); return; }
       if (existing.players && existing.players[myPlayerNum]) { alert(`Jogador ${myPlayerNum} já está na sala! Escolha outro número.`); return; }
@@ -659,15 +664,19 @@ async function joinRoom() {
 
     // Registrar jogador
     const playerRef = db.ref(`rooms/${code}/players/${myPlayerNum}`);
-    await playerRef.set({ joinedAt: Date.now() });
+    await playerRef.set({ joinedAt: Date.now(), name: nickname });
     playerRef.onDisconnect().remove();
 
+    // Ler round atual
+    const roomSnap = await roomRef.once('value');
+    const round = roomSnap.val()?.round || 1;
+
     // Calcular jogo localmente (determinístico)
-    const { groupIdx, playerNumbers } = computeGame(code, numPlayers);
+    const { groupIdx, playerNumbers } = computeGame(code, numPlayers, round);
 
     Object.assign(state, {
-      gameCode: code, numPlayers, myPlayerNum,
-      isHost: myPlayerNum === 1,
+      gameCode: code, numPlayers, myPlayerNum, nickname,
+      isHost: myPlayerNum === 1, round,
       groupIdx,
       groupThemes: THEMES.slice(groupIdx*5, groupIdx*5+5),
       firstThemeNum: groupIdx*5+1,
@@ -697,8 +706,27 @@ function startRoomListener(code) {
     if (!data) return;
     const cur = document.querySelector('.screen.active')?.id;
 
-    if (cur === 'screen-lobby') updateLobbyUI(data);
+    // Nova rodada: host incrementou round e resetou status para 'lobby'
+    if (data.status === 'lobby' && cur && cur !== 'screen-lobby' && cur !== 'screen-home') {
+      const newRound = data.round || 1;
+      if (newRound !== state.round) {
+        // Recomputa jogo com novo round
+        const { groupIdx, playerNumbers } = computeGame(state.gameCode, state.numPlayers, newRound);
+        Object.assign(state, {
+          round: newRound, groupIdx,
+          groupThemes: THEMES.slice(groupIdx*5, groupIdx*5+5),
+          firstThemeNum: groupIdx*5+1,
+          lastThemeNum: groupIdx*5+5,
+          playerNumbers,
+          myNumber: playerNumbers[state.myPlayerNum-1],
+          theme:null, selectedGroupLocal:null,
+          userOrder: Array.from({length:state.numPlayers},(_,i)=>i+1)
+        });
+      }
+      showScreen('screen-lobby');
+    }
 
+    if (cur === 'screen-lobby') updateLobbyUI(data);
     if (cur === 'screen-theme-pick') updateThemeSyncUI(data);
 
     // Transição: lobby → tema
@@ -720,13 +748,20 @@ function startRoomListener(code) {
 // LOBBY UI
 // ══════════════════════════════════
 function updateLobbyUI(data) {
+  // Guardar nomes para uso nas outras telas
+  if (data.players) {
+    Object.entries(data.players).forEach(([num, pdata]) => {
+      if (pdata?.name) state.playerNames[num] = pdata.name;
+    });
+  }
+
   const joined = data.players ? Object.keys(data.players).map(Number) : [];
   const n = data.numPlayers || state.numPlayers;
   const allJoined = joined.length === n;
 
   // Atualizar subtitle
   document.getElementById('lobby-subtitle').textContent =
-    `${joined.length} de ${n} jogadores na sala`;
+    `Rodada ${state.round} · ${joined.length} de ${n} jogadores na sala`;
 
   // Grid de jogadores
   const grid = document.getElementById('lobby-players-grid');
@@ -735,12 +770,14 @@ function updateLobbyUI(data) {
     const isJoined = joined.includes(i);
     const isMe = i === state.myPlayerNum;
     const isHost = i === 1;
+    const playerData = data.players?.[i];
+    const name = playerData?.name || `Jogador ${i}`;
     const slot = document.createElement('div');
     slot.className = `lp-slot${isJoined?' joined':''}${isMe?' is-me':''}`;
     slot.innerHTML = `
       <div class="lp-avatar">${i}</div>
       <div class="lp-info">
-        <div class="lp-name">Jogador ${i}${isHost?' &nbsp;<span class="host-badge">👑 Host</span>':''}</div>
+        <div class="lp-name">${name}${isHost?' &nbsp;<span class="host-badge">👑 Host</span>':''}</div>
         <div class="lp-tag">${isJoined ? (isMe?'★ Você está aqui':'✓ Na sala') : 'Aguardando...'}</div>
       </div>
       <div class="lp-icon">${isJoined ? '✓' : '⏳'}</div>
@@ -877,6 +914,10 @@ function goToOrdering() {
   showScreen('screen-ordering');
 }
 
+function playerLabel(num) {
+  return state.playerNames[num] || `Jogador ${num}`;
+}
+
 let dragIdx = null;
 function renderOrderCards() {
   const list = document.getElementById('cards-list');
@@ -891,7 +932,7 @@ function renderOrderCards() {
       <div class="ord-pos">${idx+1}º</div>
       <div class="ord-avatar">${playerNum}</div>
       <div class="ord-info">
-        <div class="ord-name">Jogador ${playerNum}</div>
+        <div class="ord-name">${playerLabel(playerNum)}</div>
         ${isMe?'<div class="ord-you">★ Você</div>':''}
       </div>
       <div class="ord-handle">⠿</div>
@@ -934,7 +975,7 @@ function confirmOrdering() {
     div.innerHTML = `
       <div class="res-pos">${pos+1}º</div>
       <div class="res-info">
-        <div class="res-player">Jogador ${playerNum}${isMe?' <span style="color:var(--blue);font-size:.75rem">(Você)</span>':''}</div>
+        <div class="res-player">${playerLabel(playerNum)}${isMe?' <span style="color:var(--blue);font-size:.75rem">(Você)</span>':''}</div>
         <div class="res-num">Número: <strong>${state.playerNumbers[playerNum-1]}</strong>${isCorrect?' · ✓ Correto!':`· Você pôs em ${userPos+1}º (${diff} posição${diff>1?'ões':''} de distância)`}</div>
       </div>
       <div class="res-icon">${isCorrect?'✓':'✗'}</div>
@@ -942,6 +983,9 @@ function confirmOrdering() {
     list.appendChild(div);
   });
   showScreen('screen-results');
+  const btn = document.getElementById('new-round-btn');
+  btn.textContent = state.isHost ? '🔄 Nova Rodada' : '⏳ Aguardando Nova Rodada...';
+  btn.style.opacity = state.isHost ? '1' : '0.6';
 }
 
 // ══════════════════════════════════
@@ -959,20 +1003,18 @@ async function leaveRoom() {
 }
 
 async function newRound() {
-  // Host reseta a sala para lobby novamente
-  if (state.isHost && state.gameCode) {
-    await db.ref(`rooms/${state.gameCode}`).update({
-      status: 'lobby',
-      selectedTheme: null,
-      pendingTheme: null
-    });
+  if (!state.isHost) {
+    toast('Aguardando Jogador 1 iniciar a próxima rodada...');
+    return;
   }
-  // Recalcular com novo código (adiciona sufixo aleatório)
-  const newCode = state.gameCode + Math.floor(Math.random()*9+1);
-  document.getElementById('gameCode').value = newCode;
-  if (roomListener) db.ref(`rooms/${state.gameCode}`).off();
-  roomListener = null;
-  showScreen('screen-home');
+  const nextRound = (state.round || 1) + 1;
+  await db.ref(`rooms/${state.gameCode}`).update({
+    status: 'lobby',
+    round: nextRound,
+    selectedTheme: null,
+    pendingTheme: null
+  });
+  // O listener detecta a mudança e navega todos para o lobby
 }
 </script>
 </body>
