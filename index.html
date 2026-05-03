@@ -799,7 +799,7 @@ function startGame() {
     const j = Math.floor(rng() * (i + 1));
     [pool[i], pool[j]] = [pool[j], pool[i]];
   }
-  const playerNumbers = pool.slice(0, numPlayers).sort((a, b) => a - b);
+  const playerNumbers = pool.slice(0, numPlayers);
 
   Object.assign(state, {
     gameCode: code, numPlayers, myPlayerNum, nickname,
