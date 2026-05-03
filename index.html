@@ -4,387 +4,226 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ITO — Competitivo</title>
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <!-- Firebase Compat SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-database-compat.js"></script>
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+    * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
     :root {
-      --bg: #07070f;
-      --surface: #111120;
-      --surface2: #1a1a2e;
-      --card-bg: #f0e8d2;
-      --card-border: #c4a055;
-      --text: #e2ddd4;
-      --text-muted: #6a6880;
-      --gold: #d4a017;
-      --gold-light: #f2c040;
-      --correct: #27ae60;
-      --wrong: #e74c3c;
-      --blue: #4a8fff;
-      --border: rgba(255,255,255,0.07);
+      --bg:#07070f; --surface:#111120; --surface2:#1a1a2e;
+      --card-bg:#f0e8d2; --card-border:#c4a055;
+      --text:#e2ddd4; --text-muted:#6a6880;
+      --gold:#d4a017; --gold-light:#f2c040;
+      --correct:#27ae60; --wrong:#e74c3c; --blue:#4a8fff;
+      --border:rgba(255,255,255,0.07);
     }
-    * { -webkit-tap-highlight-color: transparent; }
-    body {
-      font-family: 'DM Sans', system-ui, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-      overflow-x: hidden;
-    }
+    body { font-family:'DM Sans',system-ui,sans-serif; background:var(--bg); color:var(--text); min-height:100vh; overflow-x:hidden; }
     body::after {
-      content: '';
-      position: fixed; inset: 0;
-      background:
-        radial-gradient(ellipse 60% 50% at 80% 10%, rgba(212,160,23,0.05) 0%, transparent 60%),
-        radial-gradient(ellipse 50% 40% at 10% 90%, rgba(74,143,255,0.04) 0%, transparent 60%);
-      pointer-events: none; z-index: 0;
+      content:''; position:fixed; inset:0; pointer-events:none; z-index:0;
+      background:radial-gradient(ellipse 60% 50% at 80% 10%,rgba(212,160,23,.05) 0%,transparent 60%),
+                 radial-gradient(ellipse 50% 40% at 10% 90%,rgba(74,143,255,.04) 0%,transparent 60%);
     }
-    .screen {
-      display: none; min-height: 100vh;
-      flex-direction: column; align-items: center; justify-content: center;
-      padding: 1.5rem; animation: fadeUp 0.35s ease; position: relative; z-index: 1;
-    }
-    .screen.active { display: flex; }
-    @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(14px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
+    .screen { display:none; min-height:100vh; flex-direction:column; align-items:center; justify-content:center; padding:1.5rem; animation:fadeUp .35s ease; position:relative; z-index:1; }
+    .screen.active { display:flex; }
+    @keyframes fadeUp { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
+
+    /* ── SHARED ── */
+    .btn { width:100%; padding:.9rem; border:none; border-radius:13px; font-family:inherit; font-size:.95rem; font-weight:600; cursor:pointer; transition:all .2s; letter-spacing:.03em; }
+    .btn-primary { background:var(--gold); color:#07070f; }
+    .btn-primary:hover { background:var(--gold-light); transform:translateY(-2px); box-shadow:0 8px 24px rgba(212,160,23,.3); }
+    .btn-primary:active { transform:translateY(0); }
+    .btn-primary:disabled { opacity:.4; cursor:not-allowed; transform:none; box-shadow:none; }
+    .btn-secondary { background:transparent; color:var(--text-muted); border:1px solid var(--border); margin-top:.6rem; }
+    .btn-secondary:hover { border-color:rgba(255,255,255,.18); color:var(--text); }
+    .btn-danger { background:transparent; color:#e74c3c; border:1px solid rgba(231,76,60,.3); margin-top:.6rem; }
+    .btn-danger:hover { background:rgba(231,76,60,.08); border-color:#e74c3c; }
+    .field { margin-bottom:1.25rem; }
+    .field label { display:block; font-size:.68rem; letter-spacing:.18em; text-transform:uppercase; color:var(--gold); font-weight:600; margin-bottom:.45rem; }
+    .field-row { display:grid; grid-template-columns:1fr 1fr; gap:.75rem; }
+    input, select { width:100%; background:var(--surface2); border:1px solid var(--border); border-radius:11px; color:var(--text); font-family:inherit; font-size:.95rem; padding:.8rem 1rem; outline:none; transition:border-color .2s; }
+    input:focus, select:focus { border-color:var(--gold); }
+    select option { background:#1a1a2e; }
+    .label-tag { font-size:.65rem; letter-spacing:.25em; text-transform:uppercase; color:var(--text-muted); margin-bottom:.5rem; }
 
     /* ── HOME ── */
-    .logo {
-      font-family: 'Playfair Display', serif;
-      font-size: clamp(4rem, 12vw, 6rem);
-      font-weight: 900; color: var(--gold);
-      letter-spacing: -3px; line-height: 1;
-      text-shadow: 0 0 60px rgba(212,160,23,0.25);
+    .logo { font-family:'Playfair Display',serif; font-size:clamp(4rem,12vw,6rem); font-weight:900; color:var(--gold); letter-spacing:-3px; line-height:1; text-shadow:0 0 60px rgba(212,160,23,.25); }
+    .logo-sub { font-size:.7rem; letter-spacing:.35em; text-transform:uppercase; color:var(--text-muted); text-align:center; margin-bottom:2.5rem; }
+    .form-card { background:var(--surface); border:1px solid rgba(212,160,23,.15); border-radius:22px; padding:2rem; width:100%; max-width:400px; box-shadow:0 30px 80px rgba(0,0,0,.4); }
+    .code-row { display:flex; gap:.5rem; }
+    .code-row input { flex:1; font-weight:600; letter-spacing:.1em; text-transform:uppercase; }
+    .btn-icon { background:var(--surface2); border:1px solid var(--border); border-radius:11px; padding:0 .9rem; cursor:pointer; font-size:1.1rem; color:var(--text-muted); transition:all .2s; flex-shrink:0; }
+    .btn-icon:hover { border-color:var(--gold); color:var(--gold); }
+    .seed-note { font-size:.72rem; color:var(--text-muted); text-align:center; margin-top:1rem; line-height:1.6; padding:.75rem 1rem; background:rgba(212,160,23,.05); border-radius:10px; border:1px solid rgba(212,160,23,.12); }
+    .seed-note strong { color:var(--gold); }
+
+    /* ── LOBBY ── */
+    .lobby-wrap { width:100%; max-width:420px; }
+    .lobby-header { text-align:center; margin-bottom:1.5rem; }
+    .lobby-title { font-family:'Playfair Display',serif; font-size:1.7rem; font-weight:700; }
+    .lobby-subtitle { font-size:.75rem; color:var(--text-muted); margin-top:.25rem; }
+    .lobby-code-box {
+      background:var(--surface); border:1px solid rgba(212,160,23,.25);
+      border-radius:16px; padding:1rem 1.25rem; text-align:center; margin-bottom:1.25rem;
     }
-    .logo-sub {
-      font-size: 0.68rem; letter-spacing: 0.35em; text-transform: uppercase;
-      color: var(--text-muted); text-align: center; margin-bottom: 2.5rem;
+    .lobby-code-lbl { font-size:.62rem; letter-spacing:.18em; text-transform:uppercase; color:var(--text-muted); margin-bottom:.35rem; }
+    .lobby-code-val { font-family:'Playfair Display',serif; font-size:2rem; font-weight:900; color:var(--gold); letter-spacing:.12em; cursor:pointer; transition:opacity .2s; }
+    .lobby-code-val:hover { opacity:.75; }
+    .lobby-code-hint { font-size:.65rem; color:var(--text-muted); margin-top:.25rem; }
+    .lobby-players-grid { display:flex; flex-direction:column; gap:.5rem; margin-bottom:1.25rem; }
+    .lp-slot {
+      background:var(--surface); border:1.5px solid var(--border);
+      border-radius:13px; padding:.8rem 1.1rem;
+      display:flex; align-items:center; gap:.9rem; transition:all .25s;
     }
-    .form-card {
-      background: var(--surface);
-      border: 1px solid rgba(212,160,23,0.15);
-      border-radius: 22px; padding: 2rem;
-      width: 100%; max-width: 400px;
-      box-shadow: 0 30px 80px rgba(0,0,0,0.4);
+    .lp-slot.joined { border-color:var(--correct); background:rgba(39,174,96,.07); }
+    .lp-slot.is-me { border-color:var(--blue); background:rgba(74,143,255,.07); }
+    .lp-slot.is-me.joined { border-color:var(--blue); }
+    .lp-avatar {
+      width:38px; height:38px; border-radius:10px; flex-shrink:0;
+      display:flex; align-items:center; justify-content:center;
+      font-weight:700; font-size:.9rem; background:var(--surface2); color:var(--text-muted); transition:all .25s;
     }
-    .field { margin-bottom: 1.25rem; }
-    .field label {
-      display: block; font-size: 0.68rem; letter-spacing: 0.18em;
-      text-transform: uppercase; color: var(--gold);
-      font-weight: 600; margin-bottom: 0.45rem;
+    .lp-slot.joined .lp-avatar { background:rgba(39,174,96,.2); color:var(--correct); }
+    .lp-slot.is-me .lp-avatar { background:rgba(74,143,255,.2); color:var(--blue); }
+    .lp-info { flex:1; }
+    .lp-name { font-weight:600; font-size:.9rem; }
+    .lp-tag { font-size:.65rem; margin-top:2px; }
+    .lp-slot.joined .lp-tag { color:var(--correct); }
+    .lp-slot:not(.joined) .lp-tag { color:var(--text-muted); }
+    .lp-slot.is-me .lp-tag { color:var(--blue); }
+    .lp-icon { font-size:1rem; }
+    .lobby-status-bar {
+      display:flex; align-items:center; gap:.6rem; justify-content:center;
+      font-size:.78rem; color:var(--text-muted); margin-bottom:1rem;
     }
-    .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
-    input, select {
-      width: 100%; background: var(--surface2);
-      border: 1px solid var(--border); border-radius: 11px;
-      color: var(--text); font-family: inherit; font-size: 0.95rem;
-      padding: 0.8rem 1rem; outline: none; transition: border-color 0.2s;
-    }
-    input:focus, select:focus { border-color: var(--gold); }
-    select option { background: #1a1a2e; }
-    .code-row { display: flex; gap: 0.5rem; }
-    .code-row input { flex: 1; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; }
-    .btn-icon {
-      background: var(--surface2); border: 1px solid var(--border);
-      border-radius: 11px; padding: 0 0.9rem; cursor: pointer; font-size: 1.1rem;
-      color: var(--text-muted); transition: all 0.2s; flex-shrink: 0;
-    }
-    .btn-icon:hover { border-color: var(--gold); color: var(--gold); }
-    .btn {
-      width: 100%; padding: 0.9rem; border: none; border-radius: 13px;
-      font-family: inherit; font-size: 0.95rem; font-weight: 600;
-      cursor: pointer; transition: all 0.2s; letter-spacing: 0.03em;
-    }
-    .btn-primary { background: var(--gold); color: #07070f; }
-    .btn-primary:hover { background: var(--gold-light); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(212,160,23,0.3); }
-    .btn-primary:active { transform: translateY(0); }
-    .btn-secondary {
-      background: transparent; color: var(--text-muted);
-      border: 1px solid var(--border); margin-top: 0.6rem;
-    }
-    .btn-secondary:hover { border-color: rgba(255,255,255,0.18); color: var(--text); }
-    .seed-note {
-      font-size: 0.72rem; color: var(--text-muted); text-align: center;
-      margin-top: 1rem; line-height: 1.6;
-      padding: 0.75rem 1rem; background: rgba(212,160,23,0.05);
-      border-radius: 10px; border: 1px solid rgba(212,160,23,0.12);
-    }
-    .seed-note strong { color: var(--gold); }
+    .pulse-dot { width:8px; height:8px; border-radius:50%; background:var(--gold); animation:pulseDot 1.4s ease-in-out infinite; flex-shrink:0; }
+    @keyframes pulseDot { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.35;transform:scale(.7)} }
+    .pulse-dot.green { background:var(--correct); animation:none; }
+    .host-badge { display:inline-flex; align-items:center; gap:.3rem; background:rgba(212,160,23,.1); border:1px solid rgba(212,160,23,.2); border-radius:20px; padding:.2rem .7rem; font-size:.62rem; font-weight:600; color:var(--gold); letter-spacing:.08em; text-transform:uppercase; }
 
     /* ── THEME PICKER ── */
-    .theme-picker-wrap { width: 100%; max-width: 480px; }
-    .tp-header { text-align: center; margin-bottom: 1.25rem; }
-    .tp-title { font-family: 'Playfair Display', serif; font-size: 1.7rem; font-weight: 700; }
-    .tp-sub { font-size: 0.75rem; color: var(--text-muted); margin-top: 0.3rem; }
-    .tp-group-badge {
-      display: inline-flex; align-items: center; gap: 0.5rem;
-      background: rgba(212,160,23,0.1); border: 1px solid rgba(212,160,23,0.25);
-      border-radius: 30px; padding: 0.35rem 1rem; margin-bottom: 1.25rem;
-      font-size: 0.72rem; font-weight: 600; color: var(--gold); letter-spacing: 0.1em;
-      text-transform: uppercase;
-    }
-    .tp-group-badge .dot {
-      width: 6px; height: 6px; border-radius: 50%; background: var(--gold);
-      animation: pulse 1.5s ease-in-out infinite;
-    }
-    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
-    .tp-grid { display: flex; flex-direction: column; gap: 0.6rem; }
-    .tp-card {
-      background: var(--surface); border: 1.5px solid var(--border);
-      border-radius: 15px; padding: 1rem 1.15rem;
-      display: flex; align-items: center; gap: 1rem;
-      cursor: pointer; transition: all 0.18s; user-select: none;
-      position: relative; overflow: hidden;
-    }
-    .tp-card::before {
-      content: ''; position: absolute; inset: 0;
-      background: linear-gradient(135deg, rgba(212,160,23,0.06) 0%, transparent 60%);
-      opacity: 0; transition: opacity 0.2s;
-    }
-    .tp-card:hover { border-color: rgba(212,160,23,0.45); transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0,0,0,0.3); }
-    .tp-card:hover::before { opacity: 1; }
-    .tp-card:active { transform: scale(0.985); }
-    .tp-card.selected {
-      border-color: var(--gold); background: rgba(212,160,23,0.08);
-      box-shadow: 0 0 0 3px rgba(212,160,23,0.15);
-    }
-    .tp-card.selected::before { opacity: 1; }
-    .tp-num {
-      width: 40px; height: 40px; border-radius: 10px; flex-shrink: 0;
-      background: var(--surface2); border: 1px solid var(--border);
-      display: flex; align-items: center; justify-content: center;
-      font-family: 'Playfair Display', serif; font-size: 1.1rem; font-weight: 700;
-      color: var(--text-muted); transition: all 0.18s;
-    }
-    .tp-card.selected .tp-num { background: var(--gold); color: #07070f; border-color: var(--gold); }
-    .tp-card:hover .tp-num { color: var(--gold); border-color: rgba(212,160,23,0.4); }
-    .tp-info { flex: 1; min-width: 0; }
-    .tp-name {
-      font-weight: 600; font-size: 0.9rem; line-height: 1.3;
-      color: var(--text); transition: color 0.18s;
-    }
-    .tp-card.selected .tp-name { color: var(--gold-light); }
-    .tp-scale {
-      display: flex; align-items: center; gap: 0.35rem; margin-top: 0.35rem;
-    }
-    .tp-smin, .tp-smax {
-      font-size: 0.6rem; font-weight: 600; padding: 0.15rem 0.4rem;
-      border-radius: 4px; white-space: nowrap; max-width: 110px;
-      overflow: hidden; text-overflow: ellipsis;
-    }
-    .tp-smin { background: rgba(231,76,60,0.12); color: #e57060; }
-    .tp-smax { background: rgba(39,174,96,0.12); color: #4ec77a; }
-    .tp-sarrow { flex:1; height:1px; background: linear-gradient(to right,rgba(231,76,60,0.25),rgba(39,174,96,0.25)); min-width:8px; }
-    .tp-check {
-      width: 22px; height: 22px; border-radius: 50%; flex-shrink: 0;
-      border: 1.5px solid var(--border); display: flex; align-items: center; justify-content: center;
-      font-size: 0.7rem; color: transparent; transition: all 0.18s;
-    }
-    .tp-card.selected .tp-check { background: var(--gold); border-color: var(--gold); color: #07070f; }
-    .tp-footer { margin-top: 1.1rem; }
-    .tp-hint { font-size: 0.74rem; color: var(--text-muted); text-align: center; margin-bottom: 0.8rem; font-style: italic; }
+    .theme-picker-wrap { width:100%; max-width:480px; }
+    .tp-header { text-align:center; margin-bottom:1.25rem; }
+    .tp-title { font-family:'Playfair Display',serif; font-size:1.7rem; font-weight:700; }
+    .tp-sub { font-size:.75rem; color:var(--text-muted); margin-top:.3rem; }
+    .tp-group-badge { display:inline-flex; align-items:center; gap:.5rem; background:rgba(212,160,23,.1); border:1px solid rgba(212,160,23,.25); border-radius:30px; padding:.35rem 1rem; margin-bottom:1.25rem; font-size:.72rem; font-weight:600; color:var(--gold); letter-spacing:.1em; text-transform:uppercase; }
+    .tp-group-badge .dot { width:6px; height:6px; border-radius:50%; background:var(--gold); animation:pulseDot 1.5s ease-in-out infinite; }
+    .tp-grid { display:flex; flex-direction:column; gap:.6rem; }
+    .tp-card { background:var(--surface); border:1.5px solid var(--border); border-radius:15px; padding:1rem 1.15rem; display:flex; align-items:center; gap:1rem; transition:all .18s; user-select:none; position:relative; overflow:hidden; }
+    .tp-card.interactive { cursor:pointer; }
+    .tp-card.interactive:hover { border-color:rgba(212,160,23,.45); transform:translateY(-1px); box-shadow:0 6px 20px rgba(0,0,0,.3); }
+    .tp-card.selected { border-color:var(--gold); background:rgba(212,160,23,.08); box-shadow:0 0 0 3px rgba(212,160,23,.15); }
+    .tp-num { width:40px; height:40px; border-radius:10px; flex-shrink:0; background:var(--surface2); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; font-family:'Playfair Display',serif; font-size:1.1rem; font-weight:700; color:var(--text-muted); transition:all .18s; }
+    .tp-card.selected .tp-num { background:var(--gold); color:#07070f; border-color:var(--gold); }
+    .tp-info { flex:1; min-width:0; }
+    .tp-name { font-weight:600; font-size:.9rem; line-height:1.3; }
+    .tp-card.selected .tp-name { color:var(--gold-light); }
+    .tp-scale { display:flex; align-items:center; gap:.35rem; margin-top:.35rem; }
+    .tp-smin,.tp-smax { font-size:.6rem; font-weight:600; padding:.15rem .4rem; border-radius:4px; max-width:110px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .tp-smin { background:rgba(231,76,60,.12); color:#e57060; }
+    .tp-smax { background:rgba(39,174,96,.12); color:#4ec77a; }
+    .tp-sarrow { flex:1; height:1px; background:linear-gradient(to right,rgba(231,76,60,.25),rgba(39,174,96,.25)); min-width:8px; }
+    .tp-check { width:22px; height:22px; border-radius:50%; flex-shrink:0; border:1.5px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:.7rem; color:transparent; transition:all .18s; }
+    .tp-card.selected .tp-check { background:var(--gold); border-color:var(--gold); color:#07070f; }
+    .tp-footer { margin-top:1.1rem; }
+    .tp-hint { font-size:.74rem; color:var(--text-muted); text-align:center; margin-bottom:.8rem; }
+    .waiting-msg { display:flex; align-items:center; justify-content:center; gap:.6rem; padding:.8rem; background:rgba(255,255,255,.02); border:1px solid var(--border); border-radius:12px; font-size:.8rem; color:var(--text-muted); }
 
     /* ── CARD REVEAL ── */
-    .screen-inner { width: 100%; max-width: 440px; display: flex; flex-direction: column; align-items: center; }
-    .label-tag {
-      font-size: 0.65rem; letter-spacing: 0.25em; text-transform: uppercase;
-      color: var(--text-muted); margin-bottom: 0.5rem;
-    }
-    .playing-card {
-      background: var(--card-bg);
-      border: 3px solid var(--card-border);
-      border-radius: 18px; width: 200px; height: 280px;
-      display: flex; flex-direction: column; align-items: center; justify-content: center;
-      margin: 0.75rem 0; position: relative;
-      box-shadow: 0 24px 64px rgba(0,0,0,0.55), 0 2px 0 rgba(255,255,255,0.12) inset;
-    }
-    .card-corner {
-      position: absolute; font-family: 'Playfair Display', serif;
-      font-size: 1.25rem; font-weight: 700; color: #5a3e20;
-    }
-    .card-corner.tl { top: 12px; left: 14px; }
-    .card-corner.br { bottom: 12px; right: 14px; transform: rotate(180deg); }
-    .card-suit { position: absolute; font-size: 0.9rem; color: #8a6040; opacity: 0.5; }
-    .card-suit.tl2 { top: 28px; left: 16px; }
-    .card-suit.br2 { bottom: 28px; right: 16px; transform: rotate(180deg); }
-    .card-number {
-      font-family: 'Playfair Display', serif; font-size: 5.5rem; font-weight: 900;
-      color: #2a1a0a; line-height: 1;
-      animation: popIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
-    }
-    @keyframes popIn {
-      from { transform: scale(0.4) rotate(-8deg); opacity: 0; }
-      to   { transform: scale(1) rotate(0); opacity: 1; }
-    }
-    .theme-panel {
-      background: var(--surface); border: 1px solid rgba(212,160,23,0.2);
-      border-radius: 16px; padding: 1.1rem 1.4rem; text-align: center;
-      width: 100%; margin: 0.75rem 0;
-    }
-    .theme-name {
-      font-family: 'Playfair Display', serif; font-size: 1.25rem;
-      font-weight: 700; color: var(--gold); margin-bottom: 0.6rem; line-height: 1.3;
-    }
-    .scale-strip { display: flex; align-items: center; gap: 0.5rem; }
-    .scale-min, .scale-max {
-      font-size: 0.68rem; font-weight: 600;
-      padding: 0.25rem 0.6rem; border-radius: 6px; white-space: nowrap; line-height: 1.4;
-      text-align: center;
-    }
-    .scale-min { background: rgba(231,76,60,0.15); color: #e74c3c; border: 1px solid rgba(231,76,60,0.25); }
-    .scale-max { background: rgba(39,174,96,0.15); color: #27ae60; border: 1px solid rgba(39,174,96,0.25); }
-    .scale-arrow {
-      flex: 1; height: 2px;
-      background: linear-gradient(to right, rgba(231,76,60,0.5), rgba(39,174,96,0.5));
-      border-radius: 2px; position: relative; min-width: 20px;
-    }
-    .scale-arrow::after {
-      content: '▶'; position: absolute; right: -5px; top: -5px;
-      font-size: 0.55rem; color: rgba(39,174,96,0.7);
-    }
-    .theme-group-badge {
-      display: inline-block; font-size: 0.62rem; letter-spacing: 0.12em;
-      text-transform: uppercase; color: var(--text-muted);
-      background: rgba(255,255,255,0.04); border: 1px solid var(--border);
-      border-radius: 5px; padding: 0.15rem 0.5rem; margin-bottom: 0.5rem;
-    }
-    .hint-box {
-      background: rgba(74,143,255,0.07); border: 1px solid rgba(74,143,255,0.2);
-      border-radius: 12px; padding: 0.75rem 1rem; width: 100%; margin: 0.5rem 0 0.75rem;
-      font-size: 0.78rem; color: var(--text-muted); text-align: center; line-height: 1.5;
-    }
-    .hint-box strong { color: var(--blue); }
-    .full-w { width: 100%; }
+    .screen-inner { width:100%; max-width:440px; display:flex; flex-direction:column; align-items:center; }
+    .playing-card { background:var(--card-bg); border:3px solid var(--card-border); border-radius:18px; width:200px; height:280px; display:flex; flex-direction:column; align-items:center; justify-content:center; margin:.75rem 0; position:relative; box-shadow:0 24px 64px rgba(0,0,0,.55),0 2px 0 rgba(255,255,255,.12) inset; }
+    .card-corner { position:absolute; font-family:'Playfair Display',serif; font-size:1.25rem; font-weight:700; color:#5a3e20; }
+    .card-corner.tl { top:12px; left:14px; }
+    .card-corner.br { bottom:12px; right:14px; transform:rotate(180deg); }
+    .card-suit { position:absolute; font-size:.9rem; color:#8a6040; opacity:.5; }
+    .card-suit.tl2 { top:28px; left:16px; }
+    .card-suit.br2 { bottom:28px; right:16px; transform:rotate(180deg); }
+    .card-number { font-family:'Playfair Display',serif; font-size:5.5rem; font-weight:900; color:#2a1a0a; line-height:1; animation:popIn .5s cubic-bezier(.34,1.56,.64,1); }
+    @keyframes popIn { from{transform:scale(.4) rotate(-8deg);opacity:0} to{transform:scale(1) rotate(0);opacity:1} }
+    .theme-panel { background:var(--surface); border:1px solid rgba(212,160,23,.2); border-radius:16px; padding:1.1rem 1.4rem; text-align:center; width:100%; margin:.75rem 0; }
+    .theme-group-badge { display:inline-block; font-size:.62rem; letter-spacing:.12em; text-transform:uppercase; color:var(--text-muted); background:rgba(255,255,255,.04); border:1px solid var(--border); border-radius:5px; padding:.15rem .5rem; margin-bottom:.5rem; }
+    .theme-name { font-family:'Playfair Display',serif; font-size:1.25rem; font-weight:700; color:var(--gold); margin-bottom:.6rem; line-height:1.3; }
+    .scale-strip { display:flex; align-items:center; gap:.5rem; }
+    .scale-min,.scale-max { font-size:.68rem; font-weight:600; padding:.25rem .6rem; border-radius:6px; }
+    .scale-min { background:rgba(231,76,60,.15); color:#e74c3c; border:1px solid rgba(231,76,60,.25); }
+    .scale-max { background:rgba(39,174,96,.15); color:#27ae60; border:1px solid rgba(39,174,96,.25); }
+    .scale-arrow { flex:1; height:2px; background:linear-gradient(to right,rgba(231,76,60,.5),rgba(39,174,96,.5)); border-radius:2px; position:relative; min-width:20px; }
+    .scale-arrow::after { content:'▶'; position:absolute; right:-5px; top:-5px; font-size:.55rem; color:rgba(39,174,96,.7); }
+    .hint-box { background:rgba(74,143,255,.07); border:1px solid rgba(74,143,255,.2); border-radius:12px; padding:.75rem 1rem; width:100%; margin:.5rem 0 .75rem; font-size:.78rem; color:var(--text-muted); text-align:center; line-height:1.5; }
+    .hint-box strong { color:var(--blue); }
+    .full-w { width:100%; }
 
     /* ── ORDERING ── */
-    .ordering-wrap { width: 100%; max-width: 460px; }
-    .ordering-head { text-align: center; margin-bottom: 1rem; }
-    .ordering-title { font-family: 'Playfair Display', serif; font-size: 1.6rem; font-weight: 700; }
-    .ordering-sub { font-size: 0.75rem; color: var(--text-muted); margin-top: 0.2rem; }
-    .ordering-theme-mini {
-      background: var(--surface); border: 1px solid rgba(212,160,23,0.15);
-      border-radius: 12px; padding: 0.6rem 1rem; margin-bottom: 0.75rem; text-align: center;
-    }
-    .ordering-theme-mini .tn { font-family: 'Playfair Display', serif; color: var(--gold); font-size: 0.95rem; font-weight: 700; }
-    .ordering-theme-mini .scale-mini {
-      display: flex; align-items: center; gap: 0.4rem; margin-top: 0.35rem; justify-content: center;
-    }
-    .sm-min, .sm-max { font-size: 0.62rem; font-weight: 600; padding: 0.2rem 0.45rem; border-radius: 5px; }
-    .sm-min { background: rgba(231,76,60,0.12); color: #e74c3c; }
-    .sm-max { background: rgba(39,174,96,0.12); color: #27ae60; }
-    .sm-line { flex:1; height:1px; background: linear-gradient(to right,rgba(231,76,60,0.3),rgba(39,174,96,0.3)); min-width:10px; }
-    .scale-bar {
-      display: flex; align-items: center; gap: 0.5rem; margin: 0.3rem 0;
-    }
-    .scale-bar-min, .scale-bar-max {
-      font-size: 0.62rem; font-weight: 600; letter-spacing: 0.06em;
-      padding: 0.18rem 0.5rem; border-radius: 5px;
-    }
-    .scale-bar-min { background: rgba(231,76,60,0.12); color: #e74c3c; }
-    .scale-bar-max { background: rgba(39,174,96,0.12); color: #27ae60; }
-    .scale-bar-line { flex: 1; height: 1px; background: var(--border); }
-    .cards-list { display: flex; flex-direction: column; gap: 0.5rem; margin: 0.25rem 0; }
-    .ord-card {
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: 13px; padding: 0.85rem 1.1rem;
-      display: flex; align-items: center; gap: 0.9rem;
-      cursor: grab; user-select: none; transition: all 0.15s;
-    }
-    .ord-card:active { cursor: grabbing; }
-    .ord-card.dragging { opacity: 0.3; border-style: dashed; border-color: var(--gold); }
-    .ord-card.drag-over { border-color: var(--gold); background: rgba(212,160,23,0.08); transform: scale(1.025); }
-    .ord-card.is-me { border-color: var(--blue); background: rgba(74,143,255,0.07); }
-    .ord-avatar {
-      width: 36px; height: 36px; border-radius: 9px;
-      display: flex; align-items: center; justify-content: center;
-      font-weight: 700; font-size: 0.85rem; flex-shrink: 0;
-      background: var(--surface2); color: var(--text-muted);
-    }
-    .ord-card.is-me .ord-avatar { background: var(--blue); color: #fff; }
-    .ord-info { flex: 1; }
-    .ord-name { font-weight: 600; font-size: 0.9rem; }
-    .ord-you { font-size: 0.65rem; color: var(--blue); font-weight: 500; margin-top: 1px; }
-    .ord-handle { color: var(--text-muted); font-size: 1.2rem; cursor: grab; padding: 0 2px; }
-    .ord-pos { font-size: 0.65rem; color: var(--text-muted); font-weight: 600; min-width: 20px; text-align: center; }
+    .ordering-wrap { width:100%; max-width:460px; }
+    .ordering-head { text-align:center; margin-bottom:1rem; }
+    .ordering-title { font-family:'Playfair Display',serif; font-size:1.6rem; font-weight:700; }
+    .ordering-sub { font-size:.75rem; color:var(--text-muted); margin-top:.2rem; }
+    .ordering-theme-mini { background:var(--surface); border:1px solid rgba(212,160,23,.15); border-radius:12px; padding:.6rem 1rem; margin-bottom:.75rem; text-align:center; }
+    .ordering-theme-mini .tn { font-family:'Playfair Display',serif; color:var(--gold); font-size:.95rem; font-weight:700; }
+    .ordering-theme-mini .scale-mini { display:flex; align-items:center; gap:.4rem; margin-top:.35rem; justify-content:center; }
+    .sm-min,.sm-max { font-size:.62rem; font-weight:600; padding:.2rem .45rem; border-radius:5px; }
+    .sm-min { background:rgba(231,76,60,.12); color:#e74c3c; }
+    .sm-max { background:rgba(39,174,96,.12); color:#27ae60; }
+    .sm-line { flex:1; height:1px; background:linear-gradient(to right,rgba(231,76,60,.3),rgba(39,174,96,.3)); min-width:10px; }
+    .scale-bar { display:flex; align-items:center; gap:.5rem; margin:.3rem 0; }
+    .scale-bar-min,.scale-bar-max { font-size:.62rem; font-weight:600; padding:.18rem .5rem; border-radius:5px; }
+    .scale-bar-min { background:rgba(231,76,60,.12); color:#e74c3c; }
+    .scale-bar-max { background:rgba(39,174,96,.12); color:#27ae60; }
+    .scale-bar-line { flex:1; height:1px; background:var(--border); }
+    .cards-list { display:flex; flex-direction:column; gap:.5rem; margin:.25rem 0; }
+    .ord-card { background:var(--surface); border:1px solid var(--border); border-radius:13px; padding:.85rem 1.1rem; display:flex; align-items:center; gap:.9rem; cursor:grab; user-select:none; transition:all .15s; }
+    .ord-card:active { cursor:grabbing; }
+    .ord-card.dragging { opacity:.3; border-style:dashed; border-color:var(--gold); }
+    .ord-card.drag-over { border-color:var(--gold); background:rgba(212,160,23,.08); transform:scale(1.025); }
+    .ord-card.is-me { border-color:var(--blue); background:rgba(74,143,255,.07); }
+    .ord-avatar { width:36px; height:36px; border-radius:9px; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:.85rem; flex-shrink:0; background:var(--surface2); color:var(--text-muted); }
+    .ord-card.is-me .ord-avatar { background:var(--blue); color:#fff; }
+    .ord-info { flex:1; }
+    .ord-name { font-weight:600; font-size:.9rem; }
+    .ord-you { font-size:.65rem; color:var(--blue); font-weight:500; margin-top:1px; }
+    .ord-handle { color:var(--text-muted); font-size:1.2rem; cursor:grab; padding:0 2px; }
+    .ord-pos { font-size:.65rem; color:var(--text-muted); font-weight:600; min-width:20px; text-align:center; }
 
     /* ── RESULTS ── */
-    .results-wrap { width: 100%; max-width: 460px; }
-    .results-title { font-family: 'Playfair Display', serif; font-size: 2rem; font-weight: 700; text-align: center; }
-    .score-block { text-align: center; margin: 0.75rem 0 1.25rem; }
-    .score-big {
-      font-family: 'Playfair Display', serif; font-size: 4rem; font-weight: 900;
-      color: var(--gold); line-height: 1; text-shadow: 0 0 40px rgba(212,160,23,0.3);
-    }
-    .score-lbl { font-size: 0.68rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--text-muted); }
-    .section-tag { font-size: 0.65rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--text-muted); margin: 1rem 0 0.6rem; }
-    .res-card {
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: 13px; padding: 0.85rem 1.1rem;
-      display: flex; align-items: center; gap: 0.9rem;
-      margin-bottom: 0.45rem;
-    }
-    .res-card.correct { border-color: var(--correct); background: rgba(39,174,96,0.07); }
-    .res-card.wrong   { border-color: var(--wrong);   background: rgba(231,76,60,0.07); }
-    .res-pos {
-      width: 30px; height: 30px; border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 0.78rem; font-weight: 700; flex-shrink: 0;
-    }
-    .correct .res-pos { background: var(--correct); color: #fff; }
-    .wrong   .res-pos { background: var(--wrong);   color: #fff; }
-    .res-info { flex: 1; }
-    .res-player { font-weight: 600; font-size: 0.9rem; }
-    .res-num { font-size: 0.75rem; color: var(--text-muted); margin-top: 1px; }
-    .res-icon { font-size: 1.1rem; }
-    .compare-note {
-      font-size: 0.78rem; color: var(--text-muted); text-align: center;
-      font-style: italic; margin: 1rem 0;
-      padding: 0.7rem; background: rgba(255,255,255,0.02); border-radius: 10px;
-      border: 1px solid var(--border);
-    }
-    .result-theme-box {
-      background: var(--surface); border: 1px solid rgba(212,160,23,0.15);
-      border-radius: 14px; padding: 0.9rem 1.25rem; text-align: center; margin-bottom: 1rem;
-    }
-    .result-theme-lbl { font-size: 0.62rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.25rem; }
-    .result-theme-name { font-family: 'Playfair Display', serif; font-size: 1.1rem; color: var(--gold); }
+    .results-wrap { width:100%; max-width:460px; }
+    .results-title { font-family:'Playfair Display',serif; font-size:2rem; font-weight:700; text-align:center; }
+    .score-block { text-align:center; margin:.75rem 0 1.25rem; }
+    .score-big { font-family:'Playfair Display',serif; font-size:4rem; font-weight:900; color:var(--gold); line-height:1; text-shadow:0 0 40px rgba(212,160,23,.3); }
+    .score-lbl { font-size:.68rem; letter-spacing:.2em; text-transform:uppercase; color:var(--text-muted); }
+    .section-tag { font-size:.65rem; letter-spacing:.2em; text-transform:uppercase; color:var(--text-muted); margin:1rem 0 .6rem; }
+    .res-card { background:var(--surface); border:1px solid var(--border); border-radius:13px; padding:.85rem 1.1rem; display:flex; align-items:center; gap:.9rem; margin-bottom:.45rem; }
+    .res-card.correct { border-color:var(--correct); background:rgba(39,174,96,.07); }
+    .res-card.wrong   { border-color:var(--wrong);   background:rgba(231,76,60,.07); }
+    .res-pos { width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:.78rem; font-weight:700; flex-shrink:0; }
+    .correct .res-pos { background:var(--correct); color:#fff; }
+    .wrong   .res-pos { background:var(--wrong);   color:#fff; }
+    .res-info { flex:1; }
+    .res-player { font-weight:600; font-size:.9rem; }
+    .res-num { font-size:.75rem; color:var(--text-muted); margin-top:1px; }
+    .res-icon { font-size:1.1rem; }
+    .compare-note { font-size:.78rem; color:var(--text-muted); text-align:center; font-style:italic; margin:1rem 0; padding:.7rem; background:rgba(255,255,255,.02); border-radius:10px; border:1px solid var(--border); }
+    .result-theme-box { background:var(--surface); border:1px solid rgba(212,160,23,.15); border-radius:14px; padding:.9rem 1.25rem; text-align:center; margin-bottom:1rem; }
+    .result-theme-lbl { font-size:.62rem; letter-spacing:.15em; text-transform:uppercase; color:var(--text-muted); margin-bottom:.25rem; }
+    .result-theme-name { font-family:'Playfair Display',serif; font-size:1.1rem; color:var(--gold); }
 
     /* ── MODAL ── */
-    .modal-overlay {
-      display: none; position: fixed; inset: 0; z-index: 100;
-      background: rgba(0,0,0,0.8); align-items: center; justify-content: center; padding: 1.5rem;
-      overflow-y: auto;
-    }
-    .modal-overlay.open { display: flex; }
-    .modal {
-      background: var(--surface); border: 1px solid rgba(212,160,23,0.2);
-      border-radius: 20px; padding: 2rem; max-width: 400px; width: 100%;
-      box-shadow: 0 30px 80px rgba(0,0,0,0.6); margin: auto;
-    }
-    .modal h2 { font-family: 'Playfair Display', serif; color: var(--gold); font-size: 1.5rem; margin-bottom: 1rem; }
-    .rule-step {
-      display: flex; gap: 0.75rem; margin-bottom: 0.9rem; align-items: flex-start;
-    }
-    .rule-num {
-      width: 24px; height: 24px; border-radius: 50%; background: var(--gold);
-      color: #07070f; font-size: 0.7rem; font-weight: 700;
-      display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px;
-    }
-    .rule-text { font-size: 0.83rem; color: var(--text-muted); line-height: 1.65; }
-    .rule-text strong { color: var(--text); }
-    .rule-text em { color: var(--gold); font-style: normal; }
-    .info-box {
-      background: rgba(212,160,23,0.06); border: 1px solid rgba(212,160,23,0.15);
-      border-radius: 10px; padding: 0.75rem 1rem; margin: 0.75rem 0;
-      font-size: 0.8rem; color: var(--text-muted); line-height: 1.6;
-    }
-    .info-box strong { color: var(--gold); }
-    .warn-box {
-      background: rgba(231,76,60,0.07); border: 1px solid rgba(231,76,60,0.2);
-      border-radius: 10px; padding: 0.7rem 1rem; margin: 0.75rem 0;
-      font-size: 0.8rem; color: #e57060; line-height: 1.5;
-    }
+    .modal-overlay { display:none; position:fixed; inset:0; z-index:100; background:rgba(0,0,0,.8); align-items:center; justify-content:center; padding:1.5rem; overflow-y:auto; }
+    .modal-overlay.open { display:flex; }
+    .modal { background:var(--surface); border:1px solid rgba(212,160,23,.2); border-radius:20px; padding:2rem; max-width:400px; width:100%; box-shadow:0 30px 80px rgba(0,0,0,.6); margin:auto; }
+    .modal h2 { font-family:'Playfair Display',serif; color:var(--gold); font-size:1.5rem; margin-bottom:1rem; }
+    .rule-step { display:flex; gap:.75rem; margin-bottom:.9rem; align-items:flex-start; }
+    .rule-num { width:24px; height:24px; border-radius:50%; background:var(--gold); color:#07070f; font-size:.7rem; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:1px; }
+    .rule-text { font-size:.83rem; color:var(--text-muted); line-height:1.65; }
+    .rule-text strong { color:var(--text); }
+    .rule-text em { color:var(--gold); font-style:normal; }
+    .info-box { background:rgba(212,160,23,.06); border:1px solid rgba(212,160,23,.15); border-radius:10px; padding:.75rem 1rem; margin:.75rem 0; font-size:.8rem; color:var(--text-muted); line-height:1.6; }
+    .info-box strong { color:var(--gold); }
+    .warn-box { background:rgba(231,76,60,.07); border:1px solid rgba(231,76,60,.2); border-radius:10px; padding:.7rem 1rem; margin:.75rem 0; font-size:.8rem; color:#e57060; line-height:1.5; }
+
+    /* ── TOAST ── */
+    #toast { position:fixed; bottom:1.5rem; left:50%; transform:translateX(-50%) translateY(80px); background:rgba(30,30,50,.95); border:1px solid rgba(255,255,255,.1); border-radius:12px; padding:.65rem 1.2rem; font-size:.8rem; color:var(--text); white-space:nowrap; z-index:200; transition:transform .3s ease; pointer-events:none; backdrop-filter:blur(10px); }
+    #toast.show { transform:translateX(-50%) translateY(0); }
   </style>
 </head>
 <body>
@@ -393,13 +232,11 @@
 <div id="screen-home" class="screen active">
   <div class="logo">ito</div>
   <div class="logo-sub">Modo Competitivo</div>
-
   <div class="form-card">
     <div class="field">
       <label>Código da Partida</label>
       <div class="code-row">
-        <input type="text" id="gameCode" placeholder="Ex: FESTA2024" maxlength="12"
-               oninput="this.value=this.value.toUpperCase()">
+        <input type="text" id="gameCode" placeholder="Ex: FESTA24" maxlength="12" oninput="this.value=this.value.toUpperCase()">
         <button class="btn-icon" onclick="randomCode()" title="Gerar código aleatório">🎲</button>
       </div>
     </div>
@@ -407,55 +244,90 @@
       <div class="field" style="margin-bottom:0">
         <label>Nº de Jogadores</label>
         <select id="numPlayers" onchange="updatePlayerSelect()">
-          <option value="2">2</option>
-          <option value="3">3</option>
-          <option value="4" selected>4</option>
-          <option value="5">5</option>
-          <option value="6">6</option>
-          <option value="7">7</option>
-          <option value="8">8</option>
+          <option value="2">2</option><option value="3">3</option>
+          <option value="4" selected>4</option><option value="5">5</option>
+          <option value="6">6</option><option value="7">7</option><option value="8">8</option>
         </select>
       </div>
       <div class="field" style="margin-bottom:0">
         <label>Você é</label>
         <select id="myPlayer">
-          <option value="1">Jogador 1</option>
-          <option value="2">Jogador 2</option>
-          <option value="3">Jogador 3</option>
-          <option value="4">Jogador 4</option>
+          <option value="1">Jogador 1</option><option value="2">Jogador 2</option>
+          <option value="3">Jogador 3</option><option value="4">Jogador 4</option>
         </select>
       </div>
     </div>
-    <button class="btn btn-primary" onclick="startGame()" style="margin-top:0.25rem">Revelar Carta →</button>
+    <button class="btn btn-primary" onclick="joinRoom()" style="margin-top:1.25rem">Entrar na Sala →</button>
     <button class="btn btn-secondary" onclick="document.getElementById('modal-how').classList.add('open')">📖 Como jogar</button>
-
-    <div class="seed-note">
-      🔑 <strong>Mesmo código = mesma partida</strong><br>
+    <div class="seed-note" style="margin-top:1rem">
+      🔑 <strong>Mesmo código = mesma sala.</strong><br>
+      Jogador 1 cria a sala e inicia a partida.
     </div>
   </div>
 </div>
 
-<!-- ══════════ SCREEN 2 — THEME PICKER ══════════ -->
+<!-- ══════════ SCREEN 2 — LOBBY ══════════ -->
+<div id="screen-lobby" class="screen">
+  <div class="lobby-wrap">
+    <div class="lobby-header">
+      <div class="lobby-title">Sala de Espera</div>
+      <div class="lobby-subtitle" id="lobby-subtitle">Aguardando jogadores...</div>
+    </div>
+
+    <div class="lobby-code-box" onclick="copyCode()">
+      <div class="lobby-code-lbl">Código da sala — toque para copiar</div>
+      <div class="lobby-code-val" id="lobby-code-val">——</div>
+      <div class="lobby-code-hint">Compartilhe com os outros jogadores</div>
+    </div>
+
+    <div class="lobby-players-grid" id="lobby-players-grid"></div>
+
+    <div class="lobby-status-bar" id="lobby-status-bar">
+      <div class="pulse-dot" id="lobby-pulse"></div>
+      <span id="lobby-status-msg">Conectando...</span>
+    </div>
+
+    <div id="host-controls" style="display:none">
+      <button class="btn btn-primary" id="start-btn" onclick="hostStartGame()" disabled>
+        Iniciar Partida →
+      </button>
+    </div>
+    <div id="guest-controls" style="display:none">
+      <div class="waiting-msg">
+        <div class="pulse-dot"></div>
+        Aguardando Jogador 1 iniciar a partida...
+      </div>
+    </div>
+
+    <button class="btn btn-danger" onclick="leaveRoom()">← Sair da sala</button>
+  </div>
+</div>
+
+<!-- ══════════ SCREEN 3 — THEME PICKER ══════════ -->
 <div id="screen-theme-pick" class="screen">
   <div class="theme-picker-wrap">
     <div class="tp-header">
       <div class="tp-title">Escolha o Tema</div>
-      <div class="tp-sub">Decidam juntos qual tema usar nesta rodada</div>
+      <div class="tp-sub" id="tp-sub">Decidam juntos qual tema usar nesta rodada</div>
     </div>
     <div style="display:flex;justify-content:center">
       <div class="tp-group-badge"><div class="dot"></div><span id="tp-group-label">Grupo —</span></div>
     </div>
     <div class="tp-grid" id="tp-grid"></div>
     <div class="tp-footer">
-      <div class="tp-hint">Toque em um tema para selecioná-lo. Todos devem escolher o mesmo!</div>
-      <button class="btn btn-primary" id="tp-confirm-btn" onclick="confirmTheme()" disabled
-        style="opacity:0.45;cursor:not-allowed">Confirmar Tema →</button>
-      <button class="btn btn-secondary" onclick="goHome()">← Voltar ao menu</button>
+      <div id="tp-host-area" style="display:none">
+        <div class="tp-hint">Selecione um tema e confirme para todos.</div>
+        <button class="btn btn-primary" id="tp-confirm-btn" onclick="confirmTheme()" disabled>Confirmar Tema →</button>
+      </div>
+      <div id="tp-guest-area" style="display:none">
+        <div class="waiting-msg"><div class="pulse-dot"></div> Aguardando Jogador 1 confirmar o tema...</div>
+      </div>
+      <button class="btn btn-danger" onclick="leaveRoom()" style="margin-top:.75rem">← Sair da sala</button>
     </div>
   </div>
 </div>
 
-<!-- ══════════ SCREEN 3 — CARD REVEAL ══════════ -->
+<!-- ══════════ SCREEN 4 — CARD REVEAL ══════════ -->
 <div id="screen-card" class="screen">
   <div class="screen-inner">
     <div class="label-tag">Seu número secreto</div>
@@ -466,8 +338,7 @@
       <div class="card-suit br2">♦</div>
       <div class="card-corner br" id="corner-br">?</div>
     </div>
-
-    <div class="label-tag" style="margin-top:0.75rem">Tema da Rodada</div>
+    <div class="label-tag" style="margin-top:.75rem">Tema da Rodada</div>
     <div class="theme-panel">
       <div class="theme-group-badge" id="theme-group-badge">Grupo —</div>
       <div class="theme-name" id="theme-name">—</div>
@@ -477,28 +348,24 @@
         <div class="scale-max" id="scale-max">—</div>
       </div>
     </div>
-
     <div class="hint-box">
       💬 <strong>Dê uma dica</strong> relacionada ao tema sem citar números, valores ou quantidades.<br>
       Ninguém pode mostrar ou revelar sua carta!
     </div>
-
     <div class="full-w">
       <button class="btn btn-primary" onclick="goToOrdering()">Todos deram dicas → Ordenar</button>
-      <button class="btn btn-secondary" onclick="showScreen('screen-theme-pick')">← Trocar tema</button>
     </div>
   </div>
 </div>
 
-<!-- ══════════ SCREEN 4 — ORDERING ══════════ -->
+<!-- ══════════ SCREEN 5 — ORDERING ══════════ -->
 <div id="screen-ordering" class="screen">
   <div class="ordering-wrap">
     <div class="ordering-head">
       <div class="ordering-title">Ordene os Jogadores</div>
       <div class="ordering-sub">Arraste do menor ao maior número</div>
     </div>
-
-    <div class="ordering-theme-mini" id="ordering-theme-mini">
+    <div class="ordering-theme-mini">
       <div class="tn" id="ord-theme-name">—</div>
       <div class="scale-mini">
         <div class="sm-min" id="ord-scale-min">—</div>
@@ -506,21 +373,17 @@
         <div class="sm-max" id="ord-scale-max">—</div>
       </div>
     </div>
-
     <div class="scale-bar">
       <div class="scale-bar-min" id="sb-min">menor</div>
       <div class="scale-bar-line"></div>
       <div class="scale-bar-max" id="sb-max">maior</div>
     </div>
-
     <div class="cards-list" id="cards-list"></div>
-
-    <div class="scale-bar" style="margin-top:0.3rem">
+    <div class="scale-bar" style="margin-top:.3rem">
       <div class="scale-bar-min" id="sb-min2">menor</div>
       <div class="scale-bar-line"></div>
       <div class="scale-bar-max" id="sb-max2">maior</div>
     </div>
-
     <div style="margin-top:1.25rem">
       <button class="btn btn-primary" onclick="confirmOrdering()">Confirmar Ordem ✓</button>
       <button class="btn btn-secondary" onclick="showScreen('screen-card')">← Voltar</button>
@@ -528,28 +391,23 @@
   </div>
 </div>
 
-<!-- ══════════ SCREEN 4 — RESULTS ══════════ -->
+<!-- ══════════ SCREEN 6 — RESULTS ══════════ -->
 <div id="screen-results" class="screen">
   <div class="results-wrap">
     <div class="results-title" id="results-title">Resultado!</div>
-
     <div class="score-block">
       <div class="score-big" id="score-display">–/–</div>
       <div class="score-lbl">Posições corretas</div>
     </div>
-
     <div class="result-theme-box">
       <div class="result-theme-lbl">Tema da rodada</div>
       <div class="result-theme-name" id="result-theme-name">—</div>
     </div>
-
     <div class="section-tag">Ordem correta (do menor ao maior)</div>
     <div id="correct-order-list"></div>
-
-    <p class="compare-note">📊 Compare com os amigos para ver quem acertou mais posições e ganhou a rodada!</p>
-
+    <p class="compare-note">📊 Compare com os amigos para ver quem acertou mais posições!</p>
     <button class="btn btn-primary" onclick="newRound()">🔄 Nova Rodada</button>
-    <button class="btn btn-secondary" onclick="goHome()">Menu Inicial</button>
+    <button class="btn btn-secondary" onclick="leaveRoom()">Sair da sala</button>
   </div>
 </div>
 
@@ -557,44 +415,39 @@
 <div id="modal-how" class="modal-overlay" onclick="if(event.target===this)this.classList.remove('open')">
   <div class="modal">
     <h2>🃏 Como Jogar</h2>
-
-    <div class="info-box">
-      <strong>Adaptação competitiva do ITO:</strong> No jogo original todos cooperam para ordenar as cartas juntos. Aqui, cada jogador tenta adivinhar a ordem sozinho — quem acertar mais posições vence!
-    </div>
-
-    <div class="rule-step">
-      <div class="rule-num">1</div>
-      <div class="rule-text"><strong>Combinem um código</strong> (ex: <em>FESTA2024</em>), quantos jogadores são, e quem é o Jogador 1, 2, 3… Todos digitam o mesmo código no próprio celular/PC.</div>
-    </div>
-    <div class="rule-step">
-      <div class="rule-num">2</div>
-      <div class="rule-text">Clique em <strong>Revelar Carta</strong>. Você vê seu <strong>número secreto</strong> (1–100) e o <strong>tema da rodada</strong> — com a escala de menor a maior.</div>
-    </div>
-    <div class="rule-step">
-      <div class="rule-num">3</div>
-      <div class="rule-text">Em turnos ou livremente, cada um <strong>dá uma dica</strong> usando o tema, sem revelar números, valores ou quantidades. Ex: tema "Tamanho de Animais" + número 80 → <em>"A baleia mais forte do grupo"</em></div>
-    </div>
-    <div class="rule-step">
-      <div class="rule-num">4</div>
-      <div class="rule-text">Quando todos derem sua dica, clique em <strong>Ordenar</strong> e arraste os jogadores do menor ao maior número, conforme sua leitura das dicas.</div>
-    </div>
-    <div class="rule-step">
-      <div class="rule-num">5</div>
-      <div class="rule-text">Confirme sua ordem e veja o <strong>resultado</strong>. Compare com os amigos — quem acertou mais posições vence!</div>
-    </div>
-
-    <div class="warn-box">
-      🚫 Não cite números, valores, porcentagens ou quantidades na sua dica. Não mostre nem revele sua carta!
-    </div>
-
-    <button class="btn btn-primary" onclick="document.getElementById('modal-how').classList.remove('open')" style="margin-top:0.25rem">Entendi, vamos jogar!</button>
+    <div class="info-box"><strong>Adaptação competitiva:</strong> cada jogador tenta adivinhar a ordem dos números sozinho. Quem acertar mais posições vence!</div>
+    <div class="rule-step"><div class="rule-num">1</div><div class="rule-text"><strong>Todos entram com o mesmo código.</strong> <em>Jogador 1</em> cria a sala e inicia a partida. Outros entram escolhendo seu número (Jogador 2, 3...).</div></div>
+    <div class="rule-step"><div class="rule-num">2</div><div class="rule-text">O app sorteia um <strong>grupo de 5 temas</strong>. O Jogador 1 escolhe qual usar — todos veem a escolha em tempo real.</div></div>
+    <div class="rule-step"><div class="rule-num">3</div><div class="rule-text">Cada um vê seu <strong>número secreto</strong> (1–100) e o tema. Dê uma dica usando o tema sem revelar o número. Ex: tema <em>"Tamanho de Animais"</em> + número 80 → <em>"A baleia mais forte do grupo"</em></div></div>
+    <div class="rule-step"><div class="rule-num">4</div><div class="rule-text">Arraste os jogadores do <strong>menor ao maior</strong> número conforme as dicas. Confirme e veja o resultado!</div></div>
+    <div class="warn-box">🚫 Não cite números, valores, porcentagens ou quantidades na dica!</div>
+    <button class="btn btn-primary" onclick="document.getElementById('modal-how').classList.remove('open')" style="margin-top:.25rem">Entendi!</button>
   </div>
 </div>
 
+<!-- ══════════ TOAST ══════════ -->
+<div id="toast">Copiado!</div>
+
 <script>
-// ══════════════════════════════════════════
-// SEEDED RNG — Mulberry32
-// ══════════════════════════════════════════
+// ══════════════════════════════════
+// FIREBASE INIT
+// ══════════════════════════════════
+const firebaseConfig = {
+  apiKey: "AIzaSyC8A2E829-0TfMRBnrOdI3tkU_jFiyS2yw",
+  authDomain: "ito-cooperativo.firebaseapp.com",
+  databaseURL: "https://ito-cooperativo-default-rtdb.firebaseio.com",
+  projectId: "ito-cooperativo",
+  storageBucket: "ito-cooperativo.firebasestorage.app",
+  messagingSenderId: "455040516136",
+  appId: "1:455040516136:web:c5f35dbdfcb5bac6a1351d"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+let roomListener = null;
+
+// ══════════════════════════════════
+// SEEDED RNG
+// ══════════════════════════════════
 function mulberry32(seed) {
   return function() {
     seed |= 0; seed = seed + 0x6D2B79F5 | 0;
@@ -609,141 +462,140 @@ function hashCode(str) {
   return Math.abs(h >>> 0);
 }
 
-// ══════════════════════════════════════════
-// 100 TEMAS OFICIAIS ITO PT-BR
-// Baseados na folha de temas oficial
-// ══════════════════════════════════════════
+// ══════════════════════════════════
+// 100 TEMAS OFICIAIS
+// ══════════════════════════════════
 const THEMES = [
-  /* 01 */ { name: "Mangá / anime famoso",                                    min: "desconhecido",               max: "famoso" },
-  /* 02 */ { name: "Pessoas famosas que você gostaria de ser",                min: "não gostaria de ser",         max: "gostaria de ser" },
-  /* 03 */ { name: "Coisas que te dão medo",                                  min: "nem um sustinho",             max: "morreria de medo" },
-  /* 04 */ { name: "Coisas que você gostaria de fotografar",                  min: "não vale o clique",           max: "faria um book" },
-  /* 05 */ { name: "Coisas importantes na vida",                              min: "não é nada",                  max: "importantíssimo" },
-  /* 06 */ { name: "Esportes mais conhecidos",                                min: "pouca gente conhece",         max: "muito popular" },
-  /* 07 */ { name: "Lugares onde você gostaria de morar",                     min: "não ficaria lá 5 minutos",    max: "passaria lá a eternidade" },
-  /* 08 */ { name: "Itens do dia a dia que poderiam ser boas armas",          min: "nem arranha",                 max: "arma forte" },
-  /* 09 */ { name: "Coisas que você ficaria olhando com admiração o dia inteiro", min: "nem pararia pra olhar",  max: "ficaria olhando por horas" },
-  /* 10 */ { name: "Habilidades importantes para ser líder",                  min: "não importante",              max: "essencial" },
-  /* 11 */ { name: "Contos de fadas populares",                               min: "desconhecido",                max: "popular" },
-  /* 12 */ { name: "Poderes especiais que você gostaria de ter",              min: "não gostaria",                max: "gostaria" },
-  /* 13 */ { name: "Coisas que você não conseguiria perdoar",                 min: "nada demais",                 max: "imperdoável" },
-  /* 14 */ { name: "Mentiras que você acreditaria",                           min: "não acreditaria",             max: "acreditaria com certeza" },
-  /* 15 */ { name: "Coisas que te fazem feliz",                               min: "não te faz feliz",            max: "felicidade pura" },
-  /* 16 */ { name: "Personagens da ficção com quem gostaria de ter um encontro", min: "não valeria um encontro", max: "provavelmente casaria" },
-  /* 17 */ { name: "Filmes conhecidos",                                       min: "ninguém viu",                 max: "todo mundo assistiu" },
-  /* 18 */ { name: "Coisas nas quais você gostaria de ficar em imersão",      min: "não, obrigado",               max: "quero uma piscina cheia disso" },
-  /* 19 */ { name: "Sabores de sorvete que poderiam ser deliciosos",          min: "credo, horrível!",            max: "comeria toneladas" },
-  /* 20 */ { name: "Itens / armas para lutar contra zumbis",                  min: "é pra fazer cosquinha?",      max: "adiós, zumbi!" },
-  /* 21 */ { name: "Atletas famosos",                                         min: "sei nem quem é",              max: "grande campeão" },
-  /* 22 */ { name: "Personagens da ficção que você gostaria de ser",          min: "não seria",                   max: "seria muito" },
-  /* 23 */ { name: "Coisas que cheiram bem",                                  min: "cheiro normal",               max: "faria um perfume disso" },
-  /* 24 */ { name: "Coisas que gostaria de fazer quando se aposentar",        min: "não faria",                   max: "faria com toda certeza" },
-  /* 25 */ { name: "Coisas importantes para fazer sucesso nas mídias sociais",min: "pouco importante",            max: "obrigatório" },
-  /* 26 */ { name: "Comidas famosas",                                         min: "pouca gente conhece",         max: "encontradas em todo o mundo" },
-  /* 27 */ { name: "Celebridades de filmes e séries mais conhecidas da atualidade", min: "fez poucas participações", max: "está sempre nos lançamentos" },
-  /* 28 */ { name: "Coisas que gostaria de ter como souvenir",                min: "não teria isso",              max: "teria mais de mil" },
-  /* 29 */ { name: "Coisas difíceis de suportar",                             min: "não tão difícil",             max: "praticamente impossível" },
-  /* 30 */ { name: "Habilidades essenciais para um comediante",               min: "desnecessária",               max: "obrigatória" },
-  /* 31 */ { name: "Coisas pesadas",                                          min: "levinho",                     max: "pesado" },
-  /* 32 */ { name: "Figuras históricas populares",                            min: "sei nem quem é",              max: "figura importante" },
-  /* 33 */ { name: "Coisas que você desejava quando criança",                 min: "nem queria",                  max: "queria pra caramba" },
-  /* 34 */ { name: "Coisas úteis em uma casa",                                min: "inútil",                      max: "muito útil" },
-  /* 35 */ { name: "Coisas que fazem você se sentir amado(a)",                min: "não faz",                     max: "é puro amor" },
-  /* 36 */ { name: "Canções famosas",                                         min: "ninguém conhece",             max: "todo mundo canta junto" },
-  /* 37 */ { name: "Marcas mais valiosas",                                    min: "vale pouco",                  max: "vale bilhões" },
-  /* 38 */ { name: "Coisas que quer fazer logo quando acorda",                min: "não quero fazer",             max: "quero muito" },
-  /* 39 */ { name: "Sons que te fazem feliz",                                 min: "nem é som",                   max: "felicidade para os ouvidos" },
-  /* 40 */ { name: "Pense como estudante do EM: o que é legal?",              min: "cringe",                      max: "super legal" },
-  /* 41 */ { name: "Presentes de aniversário mais comuns",                    min: "ninguém ganha",               max: "todo mundo já ganhou" },
-  /* 42 */ { name: "Países populares para viajar",                            min: "ninguém vai",                 max: "todo mundo já foi" },
-  /* 43 */ { name: "Coisas que te fazem feliz quando feitas pelo seu amor",   min: "pouco feliz",                 max: "muito feliz" },
-  /* 44 */ { name: "Animais nos quais você gostaria de montar",               min: "não gostaria",                max: "queria demais" },
-  /* 45 */ { name: "Pense como uma criança: o que te faz feliz?",             min: "não te faz muito feliz",      max: "isso sim é felicidade" },
-  /* 46 */ { name: "Vilões mais temíveis",                                    min: "até eu encarava",             max: "me faz ter pesadelos" },
-  /* 47 */ { name: "Coisas fofinhas",                                         min: "pouco fofinho",               max: "um cuti-cuti" },
-  /* 48 */ { name: "Atividades difíceis de serem feitas sozinho(a)",          min: "dá pra fazer",                max: "impossível" },
-  /* 49 */ { name: "Habilidades úteis para o trabalho",                       min: "inútil",                      max: "muito útil" },
-  /* 50 */ { name: "Pense como um gato: os lugares mais confortáveis do mundo", min: "pouco confortável",         max: "muito confortável" },
-  /* 51 */ { name: "Tamanho de animais",                                      min: "pequeno",                     max: "enorme" },
-  /* 52 */ { name: "Coisas leves",                                            min: "pouco leve",                  max: "levíssimo" },
-  /* 53 */ { name: "Frases estranhas se ditas por uma criança de 5 anos",     min: "normal",                      max: "muito estranho" },
-  /* 54 */ { name: "Algo surpreendente encontrado embaixo de uma pedra no parque", min: "algo comum",             max: "algo surpreendente" },
-  /* 55 */ { name: "Coisas confiáveis por todo o sempre",                     min: "pouco confiável",             max: "confiável eternamente" },
-  /* 56 */ { name: "Lugares onde você vai com frequência",                    min: "vai pouco",                   max: "vai muito" },
-  /* 57 */ { name: "Drinques populares",                                      min: "ninguém bebe isso",           max: "todo mundo já bebeu" },
-  /* 58 */ { name: "Pedidos de casamento que te fariam feliz",                min: "aquele de passar vergonha",   max: "algo memorável" },
-  /* 59 */ { name: "Itens de baú do tesouro que gostaria de ter",             min: "não gostaria",                max: "queria muito" },
-  /* 60 */ { name: "Tipos de festivais que gostaria de participar",           min: "não iria nem pagando",        max: "gastaria o salário pra ir" },
-  /* 61 */ { name: "Brinquedos mais conhecidos",                              min: "desconhecido",                max: "toda criança já teve um" },
-  /* 62 */ { name: "Coisas que te deixam com sono",                           min: "acordadíssimo",               max: "zzzzz…" },
-  /* 63 */ { name: "Itens úteis quando perdido(a) no deserto",                min: "não serve para nada",         max: "salvaria sua vida" },
-  /* 64 */ { name: "Momentos históricos que visitaria com máquina do tempo",  min: "fuja, louco!",                max: "iria agora" },
-  /* 65 */ { name: "Pense como vilão: herói que menos gostaria de enfrentar", min: "derrotaria facilmente",       max: "tenho medo até da sombra" },
-  /* 66 */ { name: "Palavras que gostaria de ouvir",                          min: "praticamente uma ofensa",     max: "mais que um elogio" },
-  /* 67 */ { name: "Veículos mais comuns",                                    min: "nunca vi",                    max: "tem um em cada esquina" },
-  /* 68 */ { name: "Coisas que surpreenderiam se saíssem do seu corpo",       min: "normal",                      max: "não dá pra imaginar isso" },
-  /* 69 */ { name: "Alimentos que fazem bem",                                 min: "nada saudável",               max: "puro suco de saúde" },
-  /* 70 */ { name: "Pense como cientista: o que gostaria de descobrir?",      min: "não gostaria de descobrir",   max: "merece um Nobel" },
-  /* 71 */ { name: "Itens úteis para levar a uma ilha deserta",               min: "inútil",                      max: "muito útil" },
-  /* 72 */ { name: "Piadas mais engraçadas",                                  min: "isso é ofensivo",             max: "ri litros" },
-  /* 73 */ { name: "Melhores nomes de golpes especiais para gritar",          min: "não botou medo",              max: "isso sim impõe respeito" },
-  /* 74 */ { name: "Títulos de livros que te deixariam curioso",              min: "ninguém se importa",          max: "vou comprar" },
-  /* 75 */ { name: "Pense como um cachorro: o que te faz feliz?",             min: "nada AU-AUdacioso",           max: "de balançar a cauda" },
-  /* 76 */ { name: "Melhores jogos de tabuleiro já lançados",                 min: "aquele que flopou muito",     max: "digno de um prêmio Spiel" },
-  /* 77 */ { name: "Itens diferentões que gostaria de ter",                   min: "nem tanto",                   max: "isso é muito legal" },
-  /* 78 */ { name: "Características de pessoas que gostaria no círculo de amizade", min: "nada interessante",    max: "BFF na certa" },
-  /* 79 */ { name: "Pense como um mago: qual seria o seu feitiço favorito?",  min: "feitiço comum",              max: "usaria toda hora" },
-  /* 80 */ { name: "Coisas que surpreenderiam se ditas por um professor",     min: "faz parte da aula",           max: "por essa ninguém esperava" },
-  /* 81 */ { name: "As coisas mais bonitas do mundo",                         min: "ok",                          max: "visão do paraíso" },
-  /* 82 */ { name: "Os doces mais conhecidos",                                min: "nunca vi, nem comi",          max: "vende em todo lugar" },
-  /* 83 */ { name: "Amor verdadeiro ou apenas uma aventura?",                 min: "aventura",                    max: "amor verdadeiro" },
-  /* 84 */ { name: "Pense como um herói: qual seria sua pose? (demonstre-a)", min: "lamentável",                  max: "épica" },
-  /* 85 */ { name: "Mundos imaginários que gostaria de visitar",              min: "não gostaria",                max: "viveria lá o resto da vida" },
-  /* 86 */ { name: "Coisas populares com crianças",                           min: "pouco conhecida",             max: "muito famosa" },
-  /* 87 */ { name: "Os nomes mais legais",                                    min: "muito comum",                 max: "meu filho vai ter" },
-  /* 88 */ { name: "Coisas que faz quando está de bom humor",                 min: "nunca faço",                  max: "faço muito" },
-  /* 89 */ { name: "Pense como explorador: que lugares te deixam animado?",   min: "um desânimo só",              max: "bora lá, agora?" },
-  /* 90 */ { name: "Habilidades úteis em relacionamentos",                    min: "inútil",                      max: "essencial" },
-  /* 91 */ { name: "Personagens mais fortes da ficção",                       min: "fraco demais",                max: "indestrutível" },
-  /* 92 */ { name: "Lugares onde mais acontecem encontros românticos",        min: "poucos encontros",            max: "está acontecendo um agora" },
-  /* 93 */ { name: "Um único prato pra comer até o fim da vida",              min: "não escolheria",              max: "comeria agora, inclusive" },
-  /* 94 */ { name: "Pense como adolescente: algo ruim durante a aula",        min: "nem tão ruim",                max: "que vergonha!" },
-  /* 95 */ { name: "Personagens fictícios com os piores temperamentos",       min: "de boas",                     max: "explosivo" },
-  /* 96 */ { name: "Coisas que ficaria feliz em encontrar no bolso ou bolsa", min: "nada feliz",                  max: "alegria pura" },
-  /* 97 */ { name: "Caretas engraçadas (faça-as!)",                           min: "isso é ridículo",             max: "muito engraçado!" },
-  /* 98 */ { name: "Ações e atitudes que exigem coragem",                     min: "nada corajoso",               max: "pura coragem" },
-  /* 99 */ { name: "Se você tivesse um alter ego, o que gostaria que ele fosse?", min: "não gostaria",           max: "é meu tipo" },
-  /* 100 */ { name: "Habilidades importantes para um streamer",               min: "desnecessária",               max: "obrigatória" },
+  { name:"Mangá / anime famoso", min:"desconhecido", max:"famoso" },
+  { name:"Pessoas famosas que você gostaria de ser", min:"não gostaria de ser", max:"gostaria de ser" },
+  { name:"Coisas que te dão medo", min:"nem um sustinho", max:"morreria de medo" },
+  { name:"Coisas que você gostaria de fotografar", min:"não vale o clique", max:"faria um book" },
+  { name:"Coisas importantes na vida", min:"não é nada", max:"importantíssimo" },
+  { name:"Esportes mais conhecidos", min:"pouca gente conhece", max:"muito popular" },
+  { name:"Lugares onde você gostaria de morar", min:"não ficaria lá 5 minutos", max:"passaria lá a eternidade" },
+  { name:"Itens do dia a dia que poderiam ser boas armas", min:"nem arranha", max:"arma forte" },
+  { name:"Coisas que você ficaria olhando com admiração o dia inteiro", min:"nem pararia pra olhar", max:"ficaria olhando por horas" },
+  { name:"Habilidades importantes para ser líder", min:"não importante", max:"essencial" },
+  { name:"Contos de fadas populares", min:"desconhecido", max:"popular" },
+  { name:"Poderes especiais que você gostaria de ter", min:"não gostaria", max:"gostaria" },
+  { name:"Coisas que você não conseguiria perdoar", min:"nada demais", max:"imperdoável" },
+  { name:"Mentiras que você acreditaria", min:"não acreditaria", max:"acreditaria com certeza" },
+  { name:"Coisas que te fazem feliz", min:"não te faz feliz", max:"felicidade pura" },
+  { name:"Personagens da ficção com quem gostaria de ter um encontro", min:"não valeria um encontro", max:"provavelmente casaria" },
+  { name:"Filmes conhecidos", min:"ninguém viu", max:"todo mundo assistiu" },
+  { name:"Coisas nas quais você gostaria de ficar em imersão", min:"não, obrigado", max:"quero uma piscina cheia disso" },
+  { name:"Sabores de sorvete que poderiam ser deliciosos", min:"credo, horrível!", max:"comeria toneladas" },
+  { name:"Itens / armas para lutar contra zumbis", min:"é pra fazer cosquinha?", max:"adiós, zumbi!" },
+  { name:"Atletas famosos", min:"sei nem quem é", max:"grande campeão" },
+  { name:"Personagens da ficção que você gostaria de ser", min:"não seria", max:"seria muito" },
+  { name:"Coisas que cheiram bem", min:"cheiro normal", max:"faria um perfume disso" },
+  { name:"Coisas que gostaria de fazer quando se aposentar", min:"não faria", max:"faria com toda certeza" },
+  { name:"Coisas importantes para fazer sucesso nas mídias sociais", min:"pouco importante", max:"obrigatório" },
+  { name:"Comidas famosas", min:"pouca gente conhece", max:"encontradas em todo o mundo" },
+  { name:"Celebridades de filmes e séries mais conhecidas da atualidade", min:"fez poucas participações", max:"está sempre nos lançamentos" },
+  { name:"Coisas que gostaria de ter como souvenir", min:"não teria isso", max:"teria mais de mil" },
+  { name:"Coisas difíceis de suportar", min:"não tão difícil", max:"praticamente impossível" },
+  { name:"Habilidades essenciais para um comediante", min:"desnecessária", max:"obrigatória" },
+  { name:"Coisas pesadas", min:"levinho", max:"pesado" },
+  { name:"Figuras históricas populares", min:"sei nem quem é", max:"figura importante" },
+  { name:"Coisas que você desejava quando criança", min:"nem queria", max:"queria pra caramba" },
+  { name:"Coisas úteis em uma casa", min:"inútil", max:"muito útil" },
+  { name:"Coisas que fazem você se sentir amado(a)", min:"não faz", max:"é puro amor" },
+  { name:"Canções famosas", min:"ninguém conhece", max:"todo mundo canta junto" },
+  { name:"Marcas mais valiosas", min:"vale pouco", max:"vale bilhões" },
+  { name:"Coisas que quer fazer logo quando acorda", min:"não quero fazer", max:"quero muito" },
+  { name:"Sons que te fazem feliz", min:"nem é som", max:"felicidade para os ouvidos" },
+  { name:"Pense como estudante do EM: o que é legal?", min:"cringe", max:"super legal" },
+  { name:"Presentes de aniversário mais comuns", min:"ninguém ganha", max:"todo mundo já ganhou" },
+  { name:"Países populares para viajar", min:"ninguém vai", max:"todo mundo já foi" },
+  { name:"Coisas que te fazem feliz quando feitas pelo seu amor", min:"pouco feliz", max:"muito feliz" },
+  { name:"Animais nos quais você gostaria de montar", min:"não gostaria", max:"queria demais" },
+  { name:"Pense como uma criança: o que te faz feliz?", min:"não te faz muito feliz", max:"isso sim é felicidade" },
+  { name:"Vilões mais temíveis", min:"até eu encarava", max:"me faz ter pesadelos" },
+  { name:"Coisas fofinhas", min:"pouco fofinho", max:"um cuti-cuti" },
+  { name:"Atividades difíceis de serem feitas sozinho(a)", min:"dá pra fazer", max:"impossível" },
+  { name:"Habilidades úteis para o trabalho", min:"inútil", max:"muito útil" },
+  { name:"Pense como um gato: os lugares mais confortáveis do mundo", min:"pouco confortável", max:"muito confortável" },
+  { name:"Tamanho de animais", min:"pequeno", max:"enorme" },
+  { name:"Coisas leves", min:"pouco leve", max:"levíssimo" },
+  { name:"Frases estranhas se ditas por uma criança de 5 anos", min:"normal", max:"muito estranho" },
+  { name:"Algo surpreendente encontrado embaixo de uma pedra no parque", min:"algo comum", max:"algo surpreendente" },
+  { name:"Coisas confiáveis por todo o sempre", min:"pouco confiável", max:"confiável eternamente" },
+  { name:"Lugares onde você vai com frequência", min:"vai pouco", max:"vai muito" },
+  { name:"Drinques populares", min:"ninguém bebe isso", max:"todo mundo já bebeu" },
+  { name:"Pedidos de casamento que te fariam feliz", min:"aquele de passar vergonha", max:"algo memorável" },
+  { name:"Itens de baú do tesouro que gostaria de ter", min:"não gostaria", max:"queria muito" },
+  { name:"Tipos de festivais que gostaria de participar", min:"não iria nem pagando", max:"gastaria o salário pra ir" },
+  { name:"Brinquedos mais conhecidos", min:"desconhecido", max:"toda criança já teve um" },
+  { name:"Coisas que te deixam com sono", min:"acordadíssimo", max:"zzzzz…" },
+  { name:"Itens úteis quando perdido(a) no deserto", min:"não serve para nada", max:"salvaria sua vida" },
+  { name:"Momentos históricos que visitaria com máquina do tempo", min:"fuja, louco!", max:"iria agora" },
+  { name:"Pense como vilão: herói que menos gostaria de enfrentar", min:"derrotaria facilmente", max:"tenho medo até da sombra" },
+  { name:"Palavras que gostaria de ouvir", min:"praticamente uma ofensa", max:"mais que um elogio" },
+  { name:"Veículos mais comuns", min:"nunca vi", max:"tem um em cada esquina" },
+  { name:"Coisas que surpreenderiam se saíssem do seu corpo", min:"normal", max:"não dá pra imaginar isso" },
+  { name:"Alimentos que fazem bem", min:"nada saudável", max:"puro suco de saúde" },
+  { name:"Pense como cientista: o que gostaria de descobrir?", min:"não gostaria de descobrir", max:"merece um Nobel" },
+  { name:"Itens úteis para levar a uma ilha deserta", min:"inútil", max:"muito útil" },
+  { name:"Piadas mais engraçadas", min:"isso é ofensivo", max:"ri litros" },
+  { name:"Melhores nomes de golpes especiais para gritar", min:"não botou medo", max:"isso sim impõe respeito" },
+  { name:"Títulos de livros que te deixariam curioso", min:"ninguém se importa", max:"vou comprar" },
+  { name:"Pense como um cachorro: o que te faz feliz?", min:"nada AU-AUdacioso", max:"de balançar a cauda" },
+  { name:"Melhores jogos de tabuleiro já lançados", min:"aquele que flopou muito", max:"digno de um prêmio Spiel" },
+  { name:"Itens diferentões que gostaria de ter", min:"nem tanto", max:"isso é muito legal" },
+  { name:"Características de pessoas que gostaria no círculo de amizade", min:"nada interessante", max:"BFF na certa" },
+  { name:"Pense como um mago: qual seria o seu feitiço favorito?", min:"feitiço comum", max:"usaria toda hora" },
+  { name:"Coisas que surpreenderiam se ditas por um professor", min:"faz parte da aula", max:"por essa ninguém esperava" },
+  { name:"As coisas mais bonitas do mundo", min:"ok", max:"visão do paraíso" },
+  { name:"Os doces mais conhecidos", min:"nunca vi, nem comi", max:"vende em todo lugar" },
+  { name:"Amor verdadeiro ou apenas uma aventura?", min:"aventura", max:"amor verdadeiro" },
+  { name:"Pense como um herói: qual seria sua pose? (demonstre-a)", min:"lamentável", max:"épica" },
+  { name:"Mundos imaginários que gostaria de visitar", min:"não gostaria", max:"viveria lá o resto da vida" },
+  { name:"Coisas populares com crianças", min:"pouco conhecida", max:"muito famosa" },
+  { name:"Os nomes mais legais", min:"muito comum", max:"meu filho vai ter" },
+  { name:"Coisas que faz quando está de bom humor", min:"nunca faço", max:"faço muito" },
+  { name:"Pense como explorador: que lugares te deixam animado?", min:"um desânimo só", max:"bora lá, agora?" },
+  { name:"Habilidades úteis em relacionamentos", min:"inútil", max:"essencial" },
+  { name:"Personagens mais fortes da ficção", min:"fraco demais", max:"indestrutível" },
+  { name:"Lugares onde mais acontecem encontros românticos", min:"poucos encontros", max:"está acontecendo um agora" },
+  { name:"Um único prato pra comer até o fim da vida", min:"não escolheria", max:"comeria agora, inclusive" },
+  { name:"Pense como adolescente: algo ruim durante a aula", min:"nem tão ruim", max:"que vergonha!" },
+  { name:"Personagens fictícios com os piores temperamentos", min:"de boas", max:"explosivo" },
+  { name:"Coisas que ficaria feliz em encontrar no bolso ou bolsa", min:"nada feliz", max:"alegria pura" },
+  { name:"Caretas engraçadas (faça-as!)", min:"isso é ridículo", max:"muito engraçado!" },
+  { name:"Ações e atitudes que exigem coragem", min:"nada corajoso", max:"pura coragem" },
+  { name:"Se você tivesse um alter ego, o que gostaria que ele fosse?", min:"não gostaria", max:"é meu tipo" },
+  { name:"Habilidades importantes para um streamer", min:"desnecessária", max:"obrigatória" },
 ];
 
-// ══════════════════════════════════════════
+// ══════════════════════════════════
 // STATE
-// ══════════════════════════════════════════
+// ══════════════════════════════════
 const state = {
-  gameCode: '', numPlayers: 4, myPlayerNum: 1, nickname: '',
-  theme: null, themeIdx: 0, playerNumbers: [], myNumber: 0, userOrder: []
+  gameCode:'', numPlayers:4, myPlayerNum:1, isHost:false,
+  groupIdx:0, groupThemes:[], firstThemeNum:1, lastThemeNum:5,
+  playerNumbers:[], myNumber:0, theme:null, selectedGroupLocal:null,
+  userOrder:[]
 };
 
-// ══════════════════════════════════════════
+// ══════════════════════════════════
 // NAVIGATION
-// ══════════════════════════════════════════
+// ══════════════════════════════════
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
-  window.scrollTo(0, 0);
+  window.scrollTo(0,0);
 }
-function goHome() { showScreen('screen-home'); }
 
-// ══════════════════════════════════════════
+// ══════════════════════════════════
 // HELPERS
-// ══════════════════════════════════════════
+// ══════════════════════════════════
 function randomCode() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  let code = '';
-  for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
-  document.getElementById('gameCode').value = code;
+  let c = '';
+  for (let i = 0; i < 6; i++) c += chars[Math.floor(Math.random() * chars.length)];
+  document.getElementById('gameCode').value = c;
 }
-
 function updatePlayerSelect() {
   const n = parseInt(document.getElementById('numPlayers').value);
   const sel = document.getElementById('myPlayer');
@@ -756,75 +608,193 @@ function updatePlayerSelect() {
     sel.appendChild(o);
   }
 }
-
-function playerLabel(num) {
-  return `Jogador ${num}`;
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+function copyCode() {
+  navigator.clipboard?.writeText(state.gameCode).catch(() => {});
+  toast('Código copiado: ' + state.gameCode);
+}
+function computeGame(code, numPlayers) {
+  const rng = mulberry32(hashCode(code));
+  const groupIdx = Math.floor(rng() * 20);
+  const pool = Array.from({length:100},(_,i)=>i+1);
+  for (let i = pool.length-1; i > 0; i--) {
+    const j = Math.floor(rng()*(i+1));
+    [pool[i],pool[j]] = [pool[j],pool[i]];
+  }
+  return { groupIdx, playerNumbers: pool.slice(0, numPlayers) };
 }
 
-// ══════════════════════════════════════════
-// GAME START — gera grupo de 5 temas + números
-// ══════════════════════════════════════════
-function startGame() {
+// ══════════════════════════════════
+// JOIN ROOM
+// ══════════════════════════════════
+async function joinRoom() {
   const code = document.getElementById('gameCode').value.trim().toUpperCase();
   if (!code) { alert('Insira um código de partida!'); return; }
-
-  const numPlayers = parseInt(document.getElementById('numPlayers').value);
+  const numPlayersInput = parseInt(document.getElementById('numPlayers').value);
   const myPlayerNum = parseInt(document.getElementById('myPlayer').value);
-  if (myPlayerNum > numPlayers) {
-    alert(`Você não pode ser Jogador ${myPlayerNum} em uma partida de ${numPlayers}!`); return;
+  if (myPlayerNum > numPlayersInput) {
+    alert(`Você não pode ser Jogador ${myPlayerNum} em uma partida de ${numPlayersInput}!`); return;
   }
 
-  const nickname = '';
-  const rng = mulberry32(hashCode(code));
+  const roomRef = db.ref(`rooms/${code}`);
+  let numPlayers = numPlayersInput;
 
-  // Sorteia um dos 20 grupos de 5 temas (0–19)
-  const groupIdx = Math.floor(rng() * 20);           // 0–19
-  const groupStart = groupIdx * 5;                    // índice do 1º tema do grupo
-  const groupNum = groupIdx + 1;                      // número do grupo (1–20)
-  const firstThemeNum = groupStart + 1;               // ex: 6
-  const lastThemeNum  = groupStart + 5;               // ex: 10
-  const groupThemes   = THEMES.slice(groupStart, groupStart + 5);
+  try {
+    const snap = await roomRef.once('value');
+    const existing = snap.val();
 
-  // Sorteia N números únicos de 1–100, ordena crescente
-  // Jogador 1 → menor, Jogador 2 → segundo menor, etc.
-  const pool = Array.from({ length: 100 }, (_, i) => i + 1);
-  for (let i = pool.length - 1; i > 0; i--) {
-    const j = Math.floor(rng() * (i + 1));
-    [pool[i], pool[j]] = [pool[j], pool[i]];
+    if (!existing) {
+      // Criar sala nova
+      await roomRef.set({ numPlayers, status:'lobby', hostPlayer:myPlayerNum, createdAt:Date.now() });
+    } else {
+      if (existing.status !== 'lobby') { alert('Esta partida já começou!'); return; }
+      if (existing.players && existing.players[myPlayerNum]) { alert(`Jogador ${myPlayerNum} já está na sala! Escolha outro número.`); return; }
+      numPlayers = existing.numPlayers;
+    }
+
+    // Registrar jogador
+    const playerRef = db.ref(`rooms/${code}/players/${myPlayerNum}`);
+    await playerRef.set({ joinedAt: Date.now() });
+    playerRef.onDisconnect().remove();
+
+    // Calcular jogo localmente (determinístico)
+    const { groupIdx, playerNumbers } = computeGame(code, numPlayers);
+
+    Object.assign(state, {
+      gameCode: code, numPlayers, myPlayerNum,
+      isHost: myPlayerNum === 1,
+      groupIdx,
+      groupThemes: THEMES.slice(groupIdx*5, groupIdx*5+5),
+      firstThemeNum: groupIdx*5+1,
+      lastThemeNum: groupIdx*5+5,
+      playerNumbers,
+      myNumber: playerNumbers[myPlayerNum-1],
+      theme:null, selectedGroupLocal:null,
+      userOrder: Array.from({length:numPlayers},(_,i)=>i+1)
+    });
+
+    document.getElementById('lobby-code-val').textContent = code;
+    showScreen('screen-lobby');
+    startRoomListener(code);
+
+  } catch(err) {
+    alert('Erro ao entrar na sala: ' + err.message);
   }
-  const playerNumbers = pool.slice(0, numPlayers);
+}
 
-  Object.assign(state, {
-    gameCode: code, numPlayers, myPlayerNum, nickname,
-    groupThemes, groupIdx, groupNum, firstThemeNum, lastThemeNum,
-    playerNumbers, myNumber: playerNumbers[myPlayerNum - 1],
-    theme: null, selectedGroupLocal: null,
-    userOrder: Array.from({ length: numPlayers }, (_, i) => i + 1)
+// ══════════════════════════════════
+// ROOM LISTENER
+// ══════════════════════════════════
+function startRoomListener(code) {
+  if (roomListener) db.ref(`rooms/${state.gameCode}`).off();
+  roomListener = db.ref(`rooms/${code}`).on('value', snap => {
+    const data = snap.val();
+    if (!data) return;
+    const cur = document.querySelector('.screen.active')?.id;
+
+    if (cur === 'screen-lobby') updateLobbyUI(data);
+
+    if (cur === 'screen-theme-pick') updateThemeSyncUI(data);
+
+    // Transição: lobby → tema
+    if (data.status === 'theme-pick' && cur === 'screen-lobby') {
+      renderThemePicker();
+      showScreen('screen-theme-pick');
+    }
+    // Transição: tema → carta (tema confirmado)
+    if (data.status === 'playing' && data.selectedTheme !== undefined && cur === 'screen-theme-pick') {
+      state.selectedGroupLocal = data.selectedTheme;
+      state.theme = state.groupThemes[data.selectedTheme];
+      applyThemeToScreens();
+      showScreen('screen-card');
+    }
   });
+}
 
+// ══════════════════════════════════
+// LOBBY UI
+// ══════════════════════════════════
+function updateLobbyUI(data) {
+  const joined = data.players ? Object.keys(data.players).map(Number) : [];
+  const n = data.numPlayers || state.numPlayers;
+  const allJoined = joined.length === n;
+
+  // Atualizar subtitle
+  document.getElementById('lobby-subtitle').textContent =
+    `${joined.length} de ${n} jogadores na sala`;
+
+  // Grid de jogadores
+  const grid = document.getElementById('lobby-players-grid');
+  grid.innerHTML = '';
+  for (let i = 1; i <= n; i++) {
+    const isJoined = joined.includes(i);
+    const isMe = i === state.myPlayerNum;
+    const isHost = i === 1;
+    const slot = document.createElement('div');
+    slot.className = `lp-slot${isJoined?' joined':''}${isMe?' is-me':''}`;
+    slot.innerHTML = `
+      <div class="lp-avatar">${i}</div>
+      <div class="lp-info">
+        <div class="lp-name">Jogador ${i}${isHost?' &nbsp;<span class="host-badge">👑 Host</span>':''}</div>
+        <div class="lp-tag">${isJoined ? (isMe?'★ Você está aqui':'✓ Na sala') : 'Aguardando...'}</div>
+      </div>
+      <div class="lp-icon">${isJoined ? '✓' : '⏳'}</div>
+    `;
+    grid.appendChild(slot);
+  }
+
+  // Status bar
+  const pulse = document.getElementById('lobby-pulse');
+  document.getElementById('lobby-status-msg').textContent =
+    allJoined ? 'Todos os jogadores estão na sala!' : `Aguardando ${n - joined.length} jogador(es)...`;
+  if (allJoined) { pulse.classList.add('green'); }
+
+  // Controles
+  if (state.isHost) {
+    document.getElementById('host-controls').style.display = 'block';
+    document.getElementById('guest-controls').style.display = 'none';
+    const startBtn = document.getElementById('start-btn');
+    startBtn.disabled = !allJoined;
+    startBtn.textContent = allJoined ? 'Iniciar Partida →' : `Aguardando jogadores (${joined.length}/${n})...`;
+  } else {
+    document.getElementById('host-controls').style.display = 'none';
+    document.getElementById('guest-controls').style.display = 'block';
+  }
+}
+
+// ══════════════════════════════════
+// HOST START
+// ══════════════════════════════════
+async function hostStartGame() {
+  if (!state.isHost) return;
+  await db.ref(`rooms/${state.gameCode}`).update({ status:'theme-pick' });
   renderThemePicker();
   showScreen('screen-theme-pick');
 }
 
-// ══════════════════════════════════════════
+// ══════════════════════════════════
 // THEME PICKER
-// ══════════════════════════════════════════
+// ══════════════════════════════════
 function renderThemePicker() {
   document.getElementById('tp-group-label').textContent =
     `Grupo ${state.firstThemeNum}–${state.lastThemeNum}`;
+  document.getElementById('tp-sub').textContent =
+    state.isHost ? 'Selecione um tema e confirme para todos.' : 'O Jogador 1 está escolhendo o tema...';
+
+  document.getElementById('tp-host-area').style.display = state.isHost ? 'block' : 'none';
+  document.getElementById('tp-guest-area').style.display = state.isHost ? 'none' : 'block';
 
   const grid = document.getElementById('tp-grid');
   grid.innerHTML = '';
-  state.selectedGroupLocal = null;
-  const btn = document.getElementById('tp-confirm-btn');
-  btn.disabled = true;
-  btn.style.opacity = '0.45';
-  btn.style.cursor = 'not-allowed';
-
   state.groupThemes.forEach((theme, i) => {
     const themeNum = state.firstThemeNum + i;
     const card = document.createElement('div');
-    card.className = 'tp-card';
+    card.className = `tp-card${state.isHost?' interactive':''}`;
     card.dataset.i = i;
     card.innerHTML = `
       <div class="tp-num">${themeNum}</div>
@@ -838,40 +808,57 @@ function renderThemePicker() {
       </div>
       <div class="tp-check">✓</div>
     `;
-    card.addEventListener('click', () => pickTheme(i));
+    if (state.isHost) {
+      card.addEventListener('click', () => selectThemeLocal(i));
+    }
     grid.appendChild(card);
   });
+
+  if (state.isHost) {
+    const btn = document.getElementById('tp-confirm-btn');
+    btn.disabled = true;
+  }
 }
 
-function pickTheme(localIdx) {
+function selectThemeLocal(localIdx) {
+  if (!state.isHost) return;
   state.selectedGroupLocal = localIdx;
-  document.querySelectorAll('.tp-card').forEach((c, i) => {
-    c.classList.toggle('selected', i === localIdx);
-  });
+  document.querySelectorAll('.tp-card').forEach((c,i) => c.classList.toggle('selected', i===localIdx));
   const btn = document.getElementById('tp-confirm-btn');
   btn.disabled = false;
-  btn.style.opacity = '1';
-  btn.style.cursor = 'pointer';
+  // Sync pending selection to Firebase so others can see
+  db.ref(`rooms/${state.gameCode}/pendingTheme`).set(localIdx);
 }
 
-function confirmTheme() {
-  if (state.selectedGroupLocal === null) return;
-  const theme = state.groupThemes[state.selectedGroupLocal];
-  const themeNum = state.firstThemeNum + state.selectedGroupLocal;
-  state.theme = theme;
+function updateThemeSyncUI(data) {
+  // Guests see the host's pending selection in real-time
+  if (!state.isHost && data.pendingTheme !== undefined) {
+    document.querySelectorAll('.tp-card').forEach((c,i) => c.classList.toggle('selected', i===data.pendingTheme));
+  }
+}
 
-  // Preenche tela de carta
+async function confirmTheme() {
+  if (!state.isHost || state.selectedGroupLocal === null) return;
+  state.theme = state.groupThemes[state.selectedGroupLocal];
+  await db.ref(`rooms/${state.gameCode}`).update({
+    status: 'playing',
+    selectedTheme: state.selectedGroupLocal
+  });
+  applyThemeToScreens();
+  showScreen('screen-card');
+}
+
+function applyThemeToScreens() {
+  const theme = state.theme;
+  const themeNum = state.firstThemeNum + state.selectedGroupLocal;
   const n = state.myNumber;
   document.getElementById('corner-tl').textContent = n;
   document.getElementById('corner-br').textContent = n;
   document.getElementById('my-number').textContent = n;
-  document.getElementById('theme-group-badge').textContent =
-    `Tema #${themeNum} · Grupo ${state.firstThemeNum}–${state.lastThemeNum}`;
+  document.getElementById('theme-group-badge').textContent = `Tema #${themeNum} · Grupo ${state.firstThemeNum}–${state.lastThemeNum}`;
   document.getElementById('theme-name').textContent = theme.name;
   document.getElementById('scale-min').textContent = theme.min;
   document.getElementById('scale-max').textContent = theme.max;
-
-  // Preenche tela de ordenação
   document.getElementById('ord-theme-name').textContent = theme.name;
   document.getElementById('ord-scale-min').textContent = theme.min;
   document.getElementById('ord-scale-max').textContent = theme.max;
@@ -879,155 +866,113 @@ function confirmTheme() {
   document.getElementById('sb-max').textContent = theme.max;
   document.getElementById('sb-min2').textContent = theme.min;
   document.getElementById('sb-max2').textContent = theme.max;
-
-  showScreen('screen-card');
 }
 
-// ══════════════════════════════════════════
-// ORDERING SCREEN
-// ══════════════════════════════════════════
+// ══════════════════════════════════
+// ORDERING
+// ══════════════════════════════════
 function goToOrdering() {
-  state.userOrder = Array.from({ length: state.numPlayers }, (_, i) => i + 1);
+  state.userOrder = Array.from({length:state.numPlayers},(_,i)=>i+1);
   renderOrderCards();
   showScreen('screen-ordering');
 }
 
 let dragIdx = null;
-
 function renderOrderCards() {
   const list = document.getElementById('cards-list');
   list.innerHTML = '';
-
   state.userOrder.forEach((playerNum, idx) => {
     const isMe = playerNum === state.myPlayerNum;
     const card = document.createElement('div');
-    card.className = `ord-card${isMe ? ' is-me' : ''}`;
+    card.className = `ord-card${isMe?' is-me':''}`;
     card.draggable = true;
     card.dataset.idx = idx;
-
     card.innerHTML = `
-      <div class="ord-pos">${idx + 1}º</div>
+      <div class="ord-pos">${idx+1}º</div>
       <div class="ord-avatar">${playerNum}</div>
       <div class="ord-info">
-        <div class="ord-name">${playerLabel(playerNum)}</div>
-        ${isMe ? '<div class="ord-you">★ Você</div>' : ''}
+        <div class="ord-name">Jogador ${playerNum}</div>
+        ${isMe?'<div class="ord-you">★ Você</div>':''}
       </div>
       <div class="ord-handle">⠿</div>
     `;
-
-    // Drag events
-    card.addEventListener('dragstart', e => {
-      dragIdx = idx;
-      setTimeout(() => card.classList.add('dragging'), 0);
-      e.dataTransfer.effectAllowed = 'move';
-    });
-    card.addEventListener('dragend', () => {
-      card.classList.remove('dragging');
-      document.querySelectorAll('.ord-card').forEach(c => c.classList.remove('drag-over'));
-      dragIdx = null;
-    });
-    card.addEventListener('dragover', e => {
-      e.preventDefault();
-      document.querySelectorAll('.ord-card').forEach(c => c.classList.remove('drag-over'));
-      card.classList.add('drag-over');
-    });
-    card.addEventListener('drop', e => {
-      e.preventDefault();
-      if (dragIdx === null || dragIdx === idx) return;
-      const [moved] = state.userOrder.splice(dragIdx, 1);
-      state.userOrder.splice(idx, 0, moved);
-      renderOrderCards();
-    });
-
-    // Touch support
-    let touchStartY = 0;
-    card.addEventListener('touchstart', e => {
-      touchStartY = e.touches[0].clientY;
-      dragIdx = idx;
-    }, { passive: true });
-    card.addEventListener('touchmove', e => {
-      e.preventDefault();
-      const y = e.touches[0].clientY;
-      const el = document.elementFromPoint(e.touches[0].clientX, y);
-      const target = el && el.closest('.ord-card');
-      document.querySelectorAll('.ord-card').forEach(c => c.classList.remove('drag-over'));
-      if (target && target !== card) target.classList.add('drag-over');
-    }, { passive: false });
-    card.addEventListener('touchend', e => {
-      const el = document.elementFromPoint(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
-      const target = el && el.closest('.ord-card');
-      if (target && dragIdx !== null) {
-        const toIdx = parseInt(target.dataset.idx);
-        if (!isNaN(toIdx) && toIdx !== dragIdx) {
-          const [moved] = state.userOrder.splice(dragIdx, 1);
-          state.userOrder.splice(toIdx, 0, moved);
-          renderOrderCards();
-          return;
-        }
-      }
-      document.querySelectorAll('.ord-card').forEach(c => c.classList.remove('drag-over'));
-      dragIdx = null;
-    });
-
+    card.addEventListener('dragstart', e => { dragIdx=idx; setTimeout(()=>card.classList.add('dragging'),0); e.dataTransfer.effectAllowed='move'; });
+    card.addEventListener('dragend', () => { card.classList.remove('dragging'); document.querySelectorAll('.ord-card').forEach(c=>c.classList.remove('drag-over')); dragIdx=null; });
+    card.addEventListener('dragover', e => { e.preventDefault(); document.querySelectorAll('.ord-card').forEach(c=>c.classList.remove('drag-over')); card.classList.add('drag-over'); });
+    card.addEventListener('drop', e => { e.preventDefault(); if(dragIdx===null||dragIdx===idx)return; const[m]=state.userOrder.splice(dragIdx,1); state.userOrder.splice(idx,0,m); renderOrderCards(); });
+    // Touch
+    let ty=0;
+    card.addEventListener('touchstart',e=>{ty=e.touches[0].clientY;dragIdx=idx;},{passive:true});
+    card.addEventListener('touchmove',e=>{e.preventDefault();const el=document.elementFromPoint(e.touches[0].clientX,e.touches[0].clientY);const t=el&&el.closest('.ord-card');document.querySelectorAll('.ord-card').forEach(c=>c.classList.remove('drag-over'));if(t&&t!==card)t.classList.add('drag-over');},{passive:false});
+    card.addEventListener('touchend',e=>{const el=document.elementFromPoint(e.changedTouches[0].clientX,e.changedTouches[0].clientY);const t=el&&el.closest('.ord-card');if(t&&dragIdx!==null){const ti=parseInt(t.dataset.idx);if(!isNaN(ti)&&ti!==dragIdx){const[m]=state.userOrder.splice(dragIdx,1);state.userOrder.splice(ti,0,m);renderOrderCards();return;}}document.querySelectorAll('.ord-card').forEach(c=>c.classList.remove('drag-over'));dragIdx=null;});
     list.appendChild(card);
   });
 }
 
-// ══════════════════════════════════════════
-// CONFIRM + RESULTS
-// ══════════════════════════════════════════
+// ══════════════════════════════════
+// RESULTS
+// ══════════════════════════════════
 function confirmOrdering() {
-  // Ordem correta: players ordenados pelo número crescente
-  const actualOrder = Array.from({ length: state.numPlayers }, (_, i) => i + 1)
-    .sort((a, b) => state.playerNumbers[a - 1] - state.playerNumbers[b - 1]);
-
-  // Conta acertos exatos de posição
+  const actualOrder = Array.from({length:state.numPlayers},(_,i)=>i+1)
+    .sort((a,b)=>state.playerNumbers[a-1]-state.playerNumbers[b-1]);
   let correct = 0;
-  state.userOrder.forEach((p, i) => { if (p === actualOrder[i]) correct++; });
-
-  const ratio = correct / state.numPlayers;
-  const title =
-    ratio === 1    ? '🎉 Perfeito!' :
-    ratio >= 0.75  ? '😄 Muito bom!' :
-    ratio >= 0.5   ? '🙂 Não foi mal!' :
-    ratio >= 0.25  ? '😅 Quase lá...' :
-                     '😬 Pode melhorar!';
-
+  state.userOrder.forEach((p,i)=>{ if(p===actualOrder[i]) correct++; });
+  const ratio = correct/state.numPlayers;
+  const title = ratio===1?'🎉 Perfeito!':ratio>=.75?'😄 Muito bom!':ratio>=.5?'🙂 Não foi mal!':ratio>=.25?'😅 Quase lá...':'😬 Pode melhorar!';
   document.getElementById('results-title').textContent = title;
   document.getElementById('score-display').textContent = `${correct}/${state.numPlayers}`;
   document.getElementById('result-theme-name').textContent = state.theme.name;
-
   const list = document.getElementById('correct-order-list');
   list.innerHTML = '';
-
-  actualOrder.forEach((playerNum, pos) => {
+  actualOrder.forEach((playerNum,pos)=>{
     const userPos = state.userOrder.indexOf(playerNum);
-    const isCorrect = userPos === pos;
-    const isMe = playerNum === state.myPlayerNum;
-    const diff = Math.abs(userPos - pos);
-
+    const isCorrect = userPos===pos;
+    const isMe = playerNum===state.myPlayerNum;
+    const diff = Math.abs(userPos-pos);
     const div = document.createElement('div');
-    div.className = `res-card ${isCorrect ? 'correct' : 'wrong'}`;
+    div.className = `res-card ${isCorrect?'correct':'wrong'}`;
     div.innerHTML = `
-      <div class="res-pos">${pos + 1}º</div>
+      <div class="res-pos">${pos+1}º</div>
       <div class="res-info">
-        <div class="res-player">${playerLabel(playerNum)}${isMe ? ' <span style="color:var(--blue);font-size:0.75rem">(Você)</span>' : ''}</div>
-        <div class="res-num">Número: <strong>${state.playerNumbers[playerNum - 1]}</strong>${isCorrect ? ' · ✓ Posição correta!' : ` · Você pôs em ${userPos + 1}º (${diff} posição${diff > 1 ? 'ões' : ''} de distância)`}</div>
+        <div class="res-player">Jogador ${playerNum}${isMe?' <span style="color:var(--blue);font-size:.75rem">(Você)</span>':''}</div>
+        <div class="res-num">Número: <strong>${state.playerNumbers[playerNum-1]}</strong>${isCorrect?' · ✓ Correto!':`· Você pôs em ${userPos+1}º (${diff} posição${diff>1?'ões':''} de distância)`}</div>
       </div>
-      <div class="res-icon">${isCorrect ? '✓' : '✗'}</div>
+      <div class="res-icon">${isCorrect?'✓':'✗'}</div>
     `;
     list.appendChild(div);
   });
-
   showScreen('screen-results');
 }
 
-// ══════════════════════════════════════════
-// NEW ROUND
-// ══════════════════════════════════════════
-function newRound() {
-  document.getElementById('gameCode').value = '';
-  goHome();
+// ══════════════════════════════════
+// LEAVE & NEW ROUND
+// ══════════════════════════════════
+async function leaveRoom() {
+  if (state.gameCode) {
+    try {
+      await db.ref(`rooms/${state.gameCode}/players/${state.myPlayerNum}`).remove();
+    } catch(e) {}
+    if (roomListener) db.ref(`rooms/${state.gameCode}`).off();
+    roomListener = null;
+  }
+  showScreen('screen-home');
+}
+
+async function newRound() {
+  // Host reseta a sala para lobby novamente
+  if (state.isHost && state.gameCode) {
+    await db.ref(`rooms/${state.gameCode}`).update({
+      status: 'lobby',
+      selectedTheme: null,
+      pendingTheme: null
+    });
+  }
+  // Recalcular com novo código (adiciona sufixo aleatório)
+  const newCode = state.gameCode + Math.floor(Math.random()*9+1);
+  document.getElementById('gameCode').value = newCode;
+  if (roomListener) db.ref(`rooms/${state.gameCode}`).off();
+  roomListener = null;
+  showScreen('screen-home');
 }
 </script>
 </body>
