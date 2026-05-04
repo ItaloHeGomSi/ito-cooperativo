@@ -132,15 +132,73 @@
 
     /* ── CARD REVEAL ── */
     .screen-inner { width:100%; max-width:440px; display:flex; flex-direction:column; align-items:center; }
-    .playing-card { background:var(--card-bg); border:3px solid var(--card-border); border-radius:18px; width:200px; height:280px; display:flex; flex-direction:column; align-items:center; justify-content:center; margin:.75rem 0; position:relative; box-shadow:0 24px 64px rgba(0,0,0,.55),0 2px 0 rgba(255,255,255,.12) inset; }
+
+    /* Container com perspectiva */
+    .card-flip-wrap {
+      width:200px; height:280px; perspective:900px; margin:.75rem 0; cursor:pointer;
+    }
+    .card-flip-inner {
+      width:100%; height:100%; position:relative;
+      transform-style:preserve-3d; transition:transform .7s cubic-bezier(.4,0,.2,1);
+    }
+    .card-flip-wrap:hover .card-flip-inner,
+    .card-flip-wrap.flipped .card-flip-inner {
+      transform:rotateY(180deg);
+    }
+
+    /* Face comum */
+    .card-face {
+      position:absolute; inset:0; border-radius:18px;
+      backface-visibility:hidden; -webkit-backface-visibility:hidden;
+    }
+
+    /* Verso (frente inicial — sem o número) */
+    .card-back {
+      background: linear-gradient(135deg, #1a1430 0%, #0d0d1a 100%);
+      border:3px solid var(--card-border);
+      box-shadow:0 24px 64px rgba(0,0,0,.55);
+      display:flex; align-items:center; justify-content:center; flex-direction:column; gap:.5rem;
+      overflow:hidden;
+    }
+    .card-back::before {
+      content:'';
+      position:absolute; inset:10px; border-radius:12px;
+      border:1px solid rgba(212,160,23,.2);
+    }
+    .card-back-pattern {
+      display:grid; grid-template-columns:repeat(5,1fr); gap:8px;
+      padding:2rem; opacity:.12; position:absolute; inset:0; align-content:center;
+    }
+    .card-back-pattern span {
+      width:18px; height:18px; border-radius:50%;
+      background:var(--gold); display:block;
+    }
+    .card-back-logo {
+      font-family:'Playfair Display',serif; font-size:2.8rem; font-weight:900;
+      color:var(--gold); letter-spacing:-2px; position:relative; z-index:1;
+      text-shadow:0 0 30px rgba(212,160,23,.4);
+    }
+    .card-back-hint {
+      font-size:.6rem; letter-spacing:.2em; text-transform:uppercase;
+      color:rgba(212,160,23,.5); position:relative; z-index:1;
+    }
+
+    /* Frente (número — revelado ao hover) */
+    .card-front {
+      background:var(--card-bg);
+      border:3px solid var(--card-border);
+      box-shadow:0 24px 64px rgba(0,0,0,.55), 0 2px 0 rgba(255,255,255,.12) inset;
+      transform:rotateY(180deg);
+      display:flex; align-items:center; justify-content:center;
+    }
     .card-corner { position:absolute; font-family:'Playfair Display',serif; font-size:1.25rem; font-weight:700; color:#5a3e20; }
     .card-corner.tl { top:12px; left:14px; }
     .card-corner.br { bottom:12px; right:14px; transform:rotate(180deg); }
     .card-suit { position:absolute; font-size:.9rem; color:#8a6040; opacity:.5; }
     .card-suit.tl2 { top:28px; left:16px; }
     .card-suit.br2 { bottom:28px; right:16px; transform:rotate(180deg); }
-    .card-number { font-family:'Playfair Display',serif; font-size:5.5rem; font-weight:900; color:#2a1a0a; line-height:1; animation:popIn .5s cubic-bezier(.34,1.56,.64,1); }
-    @keyframes popIn { from{transform:scale(.4) rotate(-8deg);opacity:0} to{transform:scale(1) rotate(0);opacity:1} }
+    .card-number { font-family:'Playfair Display',serif; font-size:5.5rem; font-weight:900; color:#2a1a0a; line-height:1; }
+
     .theme-panel { background:var(--surface); border:1px solid rgba(212,160,23,.2); border-radius:16px; padding:1.1rem 1.4rem; text-align:center; width:100%; margin:.75rem 0; }
     .theme-group-badge { display:inline-block; font-size:.62rem; letter-spacing:.12em; text-transform:uppercase; color:var(--text-muted); background:rgba(255,255,255,.04); border:1px solid var(--border); border-radius:5px; padding:.15rem .5rem; margin-bottom:.5rem; }
     .theme-name { font-family:'Playfair Display',serif; font-size:1.25rem; font-weight:700; color:var(--gold); margin-bottom:.6rem; line-height:1.3; }
@@ -292,20 +350,12 @@
       <label>Seu Nome</label>
       <input type="text" id="create-nickname" placeholder="Como quer ser chamado" maxlength="20">
     </div>
-    <div class="field">
-      <label>Nº de Jogadores</label>
-      <select id="create-numPlayers">
-        <option value="2">2 jogadores</option>
-        <option value="3">3 jogadores</option>
-        <option value="4" selected>4 jogadores</option>
-        <option value="5">5 jogadores</option>
-        <option value="6">6 jogadores</option>
-        <option value="7">7 jogadores</option>
-        <option value="8">8 jogadores</option>
-      </select>
-    </div>
     <button class="btn btn-primary" onclick="createRoom()">Criar Sala →</button>
     <button class="btn btn-secondary" onclick="showScreen('screen-home')">← Voltar</button>
+    <div class="seed-note" style="margin-top:1rem">
+      👥 Os jogadores entram na sala pelo código.<br>
+      Quando todos estiverem prontos, inicie a partida!
+    </div>
   </div>
 </div>
 
@@ -404,13 +454,26 @@
 <!-- ══════════ SCREEN 4 — CARD REVEAL ══════════ -->
 <div id="screen-card" class="screen">
   <div class="screen-inner">
-    <div class="label-tag">Seu número secreto</div>
-    <div class="playing-card">
-      <div class="card-corner tl" id="corner-tl">?</div>
-      <div class="card-suit tl2">♦</div>
-      <div class="card-number" id="my-number">?</div>
-      <div class="card-suit br2">♦</div>
-      <div class="card-corner br" id="corner-br">?</div>
+    <div class="label-tag">Passe o mouse para revelar seu número</div>
+    <div class="card-flip-wrap" onclick="this.classList.toggle('flipped')">
+      <div class="card-flip-inner">
+        <!-- Verso (inicial) -->
+        <div class="card-face card-back">
+          <div class="card-back-pattern">
+            <script>document.write(Array(25).fill('<span></span>').join(''))</script>
+          </div>
+          <div class="card-back-logo">ito</div>
+          <div class="card-back-hint">toque para revelar</div>
+        </div>
+        <!-- Frente (número) -->
+        <div class="card-face card-front">
+          <div class="card-corner tl" id="corner-tl">?</div>
+          <div class="card-suit tl2">♦</div>
+          <div class="card-number" id="my-number">?</div>
+          <div class="card-suit br2">♦</div>
+          <div class="card-corner br" id="corner-br">?</div>
+        </div>
+      </div>
     </div>
     <div class="label-tag" style="margin-top:.75rem">Tema da Rodada</div>
     <div class="theme-panel">
@@ -725,29 +788,23 @@ function computeGame(code, numPlayers, round = 1) {
 // ══════════════════════════════════
 async function createRoom() {
   const nickname = document.getElementById('create-nickname').value.trim() || 'Jogador 1';
-  const numPlayers = parseInt(document.getElementById('create-numPlayers').value);
-
   const code = genCode();
   const roomRef = db.ref(`rooms/${code}`);
 
   try {
-    await roomRef.set({
-      numPlayers, status:'lobby', round:1, createdAt:Date.now()
-    });
+    // numPlayers = 0 indica dinâmico (definido quando o host iniciar)
+    await roomRef.set({ numPlayers:0, status:'lobby', round:1, createdAt:Date.now() });
 
     const playerRef = db.ref(`rooms/${code}/players/1`);
     await playerRef.set({ joinedAt:Date.now(), name:nickname });
     playerRef.onDisconnect().remove();
 
-    const { groupThemes, themeNums, playerNumbers } = computeGame(code, numPlayers, 1);
     Object.assign(state, {
-      gameCode:code, numPlayers, myPlayerNum:1, nickname, isHost:true, round:1,
-      groupThemes, themeNums,
-      firstThemeNum: themeNums[0], lastThemeNum: themeNums[4],
-      playerNumbers, myNumber:playerNumbers[0],
+      gameCode:code, numPlayers:0, myPlayerNum:1, nickname, isHost:true, round:1,
+      groupThemes:[], themeNums:[], firstThemeNum:1, lastThemeNum:5,
+      playerNumbers:[], myNumber:0,
       theme:null, selectedGroupLocal:null,
-      userOrder:Array.from({length:numPlayers},(_,i)=>i+1),
-      playerNames:{ 1: nickname }
+      userOrder:[], playerNames:{ 1: nickname }
     });
 
     document.getElementById('lobby-code-val').textContent = code;
@@ -776,29 +833,32 @@ async function joinRoom() {
     if (!existing) { alert('Sala não encontrada. Verifique o código!'); return; }
     if (existing.status !== 'lobby') { alert('Esta partida já começou!'); return; }
 
-    // Encontrar próximo slot disponível
+    // Encontrar próximo slot disponível (a partir de 2)
     const taken = existing.players ? Object.keys(existing.players).map(Number) : [];
     let myPlayerNum = null;
-    for (let i = 2; i <= existing.numPlayers; i++) {
+    for (let i = 2; i <= 8; i++) {
       if (!taken.includes(i)) { myPlayerNum = i; break; }
     }
-    if (myPlayerNum === null) { alert('Sala cheia! Todos os slots já estão ocupados.'); return; }
+    if (myPlayerNum === null) { alert('Sala cheia!'); return; }
 
-    const numPlayers = existing.numPlayers;
+    const numPlayers = existing.numPlayers || 0; // 0 = dinâmico
     const round = existing.round || 1;
 
     const playerRef = db.ref(`rooms/${code}/players/${myPlayerNum}`);
     await playerRef.set({ joinedAt:Date.now(), name:nickname });
     playerRef.onDisconnect().remove();
 
-    const { groupThemes, themeNums, playerNumbers } = computeGame(code, numPlayers, round);
+    const { groupThemes, themeNums, playerNumbers } = numPlayers >= 2
+      ? computeGame(code, numPlayers, round)
+      : { groupThemes:[], themeNums:[], playerNumbers:[] };
+
     Object.assign(state, {
       gameCode:code, numPlayers, myPlayerNum, nickname, isHost:false, round,
       groupThemes, themeNums,
-      firstThemeNum: themeNums[0], lastThemeNum: themeNums[4],
-      playerNumbers, myNumber:playerNumbers[myPlayerNum-1],
+      firstThemeNum: themeNums[0] || 1, lastThemeNum: themeNums[4] || 5,
+      playerNumbers, myNumber: playerNumbers[myPlayerNum-1] || 0,
       theme:null, selectedGroupLocal:null,
-      userOrder:Array.from({length:numPlayers},(_,i)=>i+1),
+      userOrder: numPlayers >= 2 ? Array.from({length:numPlayers},(_,i)=>i+1) : [],
       playerNames:{}
     });
 
@@ -858,8 +918,18 @@ function startRoomListener(code) {
       }
     }
 
-    // Lobby → tema
+    // Lobby → tema (guests recebem numPlayers definitivo aqui)
     if (data.status === 'theme-pick' && cur === 'screen-lobby') {
+      const np = data.numPlayers || state.numPlayers;
+      if (np !== state.numPlayers) {
+        const { groupThemes, themeNums, playerNumbers } = computeGame(state.gameCode, np, state.round);
+        Object.assign(state, {
+          numPlayers: np, groupThemes, themeNums,
+          firstThemeNum: themeNums[0], lastThemeNum: themeNums[4],
+          playerNumbers, myNumber: playerNumbers[state.myPlayerNum-1],
+          userOrder: Array.from({length:np},(_,i)=>i+1)
+        });
+      }
       renderThemePicker(); showScreen('screen-theme-pick');
     }
     // Tema → carta
@@ -888,56 +958,49 @@ function startRoomListener(code) {
 // LOBBY UI
 // ══════════════════════════════════
 function updateLobbyUI(data) {
-  // Guardar nomes para uso nas outras telas
   if (data.players) {
-    Object.entries(data.players).forEach(([num, pdata]) => {
-      if (pdata?.name) state.playerNames[num] = pdata.name;
+    Object.entries(data.players).forEach(([num, p]) => {
+      if (p?.name) state.playerNames[num] = p.name;
     });
   }
-
   const joined = data.players ? Object.keys(data.players).map(Number) : [];
-  const n = data.numPlayers || state.numPlayers;
-  const allJoined = joined.length === n;
+  const n = joined.length || 1; // número real de quem está na sala
 
-  // Atualizar subtitle
   document.getElementById('lobby-subtitle').textContent =
-    `Rodada ${state.round} · ${joined.length} de ${n} jogadores na sala`;
+    `Rodada ${state.round} · ${joined.length} jogador${joined.length !== 1 ? 'es' : ''} na sala`;
 
-  // Grid de jogadores
   const grid = document.getElementById('lobby-players-grid');
   grid.innerHTML = '';
-  for (let i = 1; i <= n; i++) {
-    const isJoined = joined.includes(i);
+  joined.sort((a,b)=>a-b).forEach(i => {
     const isMe = i === state.myPlayerNum;
     const isHost = i === 1;
     const playerData = data.players?.[i];
     const name = playerData?.name || `Jogador ${i}`;
     const slot = document.createElement('div');
-    slot.className = `lp-slot${isJoined?' joined':''}${isMe?' is-me':''}`;
+    slot.className = `lp-slot joined${isMe?' is-me':''}`;
     slot.innerHTML = `
       <div class="lp-avatar">${i}</div>
       <div class="lp-info">
         <div class="lp-name">${name}${isHost?' &nbsp;<span class="host-badge">👑 Host</span>':''}</div>
-        <div class="lp-tag">${isJoined ? (isMe?'★ Você está aqui':'✓ Na sala') : 'Aguardando...'}</div>
+        <div class="lp-tag">${isMe?'★ Você está aqui':'✓ Na sala'}</div>
       </div>
-      <div class="lp-icon">${isJoined ? '✓' : '⏳'}</div>
+      <div class="lp-icon">✓</div>
     `;
     grid.appendChild(slot);
-  }
+  });
 
-  // Status bar
-  const pulse = document.getElementById('lobby-pulse');
   document.getElementById('lobby-status-msg').textContent =
-    allJoined ? 'Todos os jogadores estão na sala!' : `Aguardando ${n - joined.length} jogador(es)...`;
-  if (allJoined) { pulse.classList.add('green'); }
+    state.isHost ? 'Inicie quando todos estiverem prontos!' : 'Aguardando o host iniciar...';
+  document.getElementById('lobby-pulse').classList.remove('green');
 
-  // Controles
   if (state.isHost) {
     document.getElementById('host-controls').style.display = 'block';
     document.getElementById('guest-controls').style.display = 'none';
     const startBtn = document.getElementById('start-btn');
-    startBtn.disabled = !allJoined;
-    startBtn.textContent = allJoined ? 'Iniciar Partida →' : `Aguardando jogadores (${joined.length}/${n})...`;
+    startBtn.disabled = joined.length < 2;
+    startBtn.textContent = joined.length < 2
+      ? 'Aguardando mais jogadores...'
+      : `Iniciar com ${joined.length} jogadores →`;
   } else {
     document.getElementById('host-controls').style.display = 'none';
     document.getElementById('guest-controls').style.display = 'block';
@@ -949,7 +1012,23 @@ function updateLobbyUI(data) {
 // ══════════════════════════════════
 async function hostStartGame() {
   if (!state.isHost) return;
-  await db.ref(`rooms/${state.gameCode}`).update({ status:'theme-pick' });
+  const snap = await db.ref(`rooms/${state.gameCode}/players`).once('value');
+  const players = snap.val() || {};
+  const numPlayers = Object.keys(players).length;
+  if (numPlayers < 2) { alert('É preciso pelo menos 2 jogadores para iniciar!'); return; }
+
+  // Salva numPlayers definitivo no Firebase
+  await db.ref(`rooms/${state.gameCode}`).update({ numPlayers, status:'theme-pick' });
+
+  // Calcula jogo com numPlayers real
+  const { groupThemes, themeNums, playerNumbers } = computeGame(state.gameCode, numPlayers, state.round);
+  Object.assign(state, {
+    numPlayers, groupThemes, themeNums,
+    firstThemeNum: themeNums[0], lastThemeNum: themeNums[4],
+    playerNumbers, myNumber: playerNumbers[0],
+    userOrder: Array.from({length:numPlayers},(_,i)=>i+1)
+  });
+
   renderThemePicker();
   showScreen('screen-theme-pick');
 }
