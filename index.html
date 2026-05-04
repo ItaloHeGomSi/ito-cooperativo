@@ -310,6 +310,12 @@
     .ord-card.readonly { cursor:default; }
     .ord-card.readonly .ord-handle { opacity:.2; cursor:default; }
     .guest-ordering-note { font-size:.78rem; color:var(--text-muted); text-align:center; padding:.6rem; background:rgba(255,255,255,.02); border:1px solid var(--border); border-radius:10px; margin:.5rem 0; }
+    .ord-indicator {
+      font-size:.58rem; font-weight:700; letter-spacing:.12em; text-transform:uppercase;
+      padding:.18rem .5rem; border-radius:5px; flex-shrink:0;
+    }
+    .ord-indicator.top { background:rgba(39,174,96,.15); color:#27ae60; border:1px solid rgba(39,174,96,.3); }
+    .ord-indicator.bottom { background:rgba(231,76,60,.15); color:#e74c3c; border:1px solid rgba(231,76,60,.3); }
 
     /* ── HOME BUTTONS ── */
     .home-btns { display:flex; flex-direction:column; gap:.75rem; }
@@ -525,15 +531,15 @@
     <div class="hints-panel" id="ord-hints-panel"></div>
 
     <div class="scale-bar" style="margin-top:.75rem">
-      <div class="scale-bar-min" id="sb-min">menor</div>
+      <div class="scale-bar-max" id="sb-min">⬆ maior</div>
       <div class="scale-bar-line"></div>
-      <div class="scale-bar-max" id="sb-max">maior</div>
+      <div class="scale-bar-min" id="sb-max">menor ⬇</div>
     </div>
     <div class="cards-list" id="cards-list"></div>
     <div class="scale-bar" style="margin-top:.3rem">
-      <div class="scale-bar-min" id="sb-min2">menor</div>
+      <div class="scale-bar-max" id="sb-min2">⬆ maior</div>
       <div class="scale-bar-line"></div>
-      <div class="scale-bar-max" id="sb-max2">maior</div>
+      <div class="scale-bar-min" id="sb-max2">menor ⬇</div>
     </div>
 
     <div id="ord-host-controls" style="margin-top:1.25rem">
@@ -1246,7 +1252,7 @@ async function goToOrdering() {
   document.getElementById('ord-host-controls').style.display = state.isHost ? 'block' : 'none';
   document.getElementById('ord-guest-controls').style.display = state.isHost ? 'none' : 'block';
   document.getElementById('ord-sub').textContent = state.isHost
-    ? 'Arraste do menor ao maior número'
+    ? 'Arraste do maior (1º) ao menor (último)'
     : 'Visualizando a ordenação do Jogador 1';
 
   renderOrderCards();
@@ -1261,6 +1267,8 @@ function renderOrderCards() {
 
   state.userOrder.forEach((playerNum, idx) => {
     const isMe = playerNum === state.myPlayerNum;
+    const isFirst = idx === 0;
+    const isLast = idx === state.userOrder.length - 1;
     const card = document.createElement('div');
     card.className = `ord-card${isMe?' is-me':''}${!canDrag?' readonly':''}`;
     card.draggable = canDrag;
@@ -1272,7 +1280,9 @@ function renderOrderCards() {
         <div class="ord-name">${playerLabel(playerNum)}</div>
         ${isMe?'<div class="ord-you">★ Você</div>':''}
       </div>
-      <div class="ord-handle">⠿</div>
+      ${isFirst ? '<div class="ord-indicator top">MAIOR</div>' : ''}
+      ${isLast  ? '<div class="ord-indicator bottom">MENOR</div>' : ''}
+      <div class="ord-handle"${!canDrag?' style="display:none"':''}>⠿</div>
     `;
 
     if (canDrag) {
@@ -1316,8 +1326,9 @@ async function confirmOrdering() {
 }
 
 function showResults() {
+  // Ordem correta: maior número em 1º, menor em último (decrescente)
   const actualOrder = Array.from({length:state.numPlayers},(_,i)=>i+1)
-    .sort((a,b)=>state.playerNumbers[a-1]-state.playerNumbers[b-1]);
+    .sort((a,b)=>state.playerNumbers[b-1]-state.playerNumbers[a-1]);
   let correct = 0;
   state.userOrder.forEach((p,i)=>{ if(p===actualOrder[i]) correct++; });
   const ratio = correct/state.numPlayers;
@@ -1332,12 +1343,18 @@ function showResults() {
     const isCorrect = userPos===pos;
     const isMe = playerNum===state.myPlayerNum;
     const diff = Math.abs(userPos-pos);
+    const isFirst = pos === 0;
+    const isLast = pos === state.numPlayers - 1;
     const div = document.createElement('div');
     div.className = `res-card ${isCorrect?'correct':'wrong'}`;
     div.innerHTML = `
       <div class="res-pos">${pos+1}º</div>
       <div class="res-info">
-        <div class="res-player">${playerLabel(playerNum)}${isMe?' <span style="color:var(--blue);font-size:.75rem">(Você)</span>':''}</div>
+        <div class="res-player">
+          ${playerLabel(playerNum)}${isMe?' <span style="color:var(--blue);font-size:.75rem">(Você)</span>':''}
+          ${isFirst?'<span class="ord-indicator top" style="margin-left:.4rem">MAIOR</span>':''}
+          ${isLast ?'<span class="ord-indicator bottom" style="margin-left:.4rem">MENOR</span>':''}
+        </div>
         <div class="res-num">Número: <strong>${state.playerNumbers[playerNum-1]}</strong>${isCorrect?' · ✓ Correto!':` · colocado em ${userPos+1}º (${diff} posição${diff>1?'ões':''} de distância)`}</div>
       </div>
       <div class="res-icon">${isCorrect?'✓':'✗'}</div>
