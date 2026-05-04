@@ -504,9 +504,15 @@
     <div class="hints-panel" id="card-hints-panel"></div>
 
     <div class="full-w" style="margin-top:.75rem">
-      <button class="btn btn-primary" id="go-order-btn" onclick="goToOrdering()">
-        Todos deram dicas → Ordenar
-      </button>
+      <div id="card-host-controls" style="display:none">
+        <button class="btn btn-primary" onclick="goToOrdering()">Todos deram dicas → Ordenar</button>
+      </div>
+      <div id="card-guest-controls" style="display:none">
+        <div class="waiting-msg">
+          <div class="pulse-dot"></div>
+          Aguardando <strong style="margin-left:.2rem">Jogador 1</strong> avançar para a ordenação...
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -1176,10 +1182,14 @@ function applyThemeToScreens() {
   document.getElementById('ord-theme-name').textContent = theme.name;
   document.getElementById('ord-scale-min').textContent = theme.min;
   document.getElementById('ord-scale-max').textContent = theme.max;
-  document.getElementById('sb-min').textContent = theme.min;
-  document.getElementById('sb-max').textContent = theme.max;
-  document.getElementById('sb-min2').textContent = theme.min;
-  document.getElementById('sb-max2').textContent = theme.max;
+  document.getElementById('sb-min').textContent = '⬆ maior';
+  document.getElementById('sb-max').textContent = 'menor ⬇';
+  document.getElementById('sb-min2').textContent = '⬆ maior';
+  document.getElementById('sb-max2').textContent = 'menor ⬇';
+
+  // Controles da tela de carta: só host avança
+  document.getElementById('card-host-controls').style.display = state.isHost ? 'block' : 'none';
+  document.getElementById('card-guest-controls').style.display = state.isHost ? 'none' : 'block';
 }
 
 // ══════════════════════════════════
