@@ -221,6 +221,48 @@
     .info-box strong { color:var(--gold); }
     .warn-box { background:rgba(231,76,60,.07); border:1px solid rgba(231,76,60,.2); border-radius:10px; padding:.7rem 1rem; margin:.75rem 0; font-size:.8rem; color:#e57060; line-height:1.5; }
 
+    /* ── HINTS PANEL ── */
+    .hints-panel { width:100%; margin:.6rem 0; display:flex; flex-direction:column; gap:.4rem; }
+    .hint-row {
+      background:var(--surface); border:1px solid var(--border);
+      border-radius:11px; padding:.6rem .9rem;
+      display:flex; align-items:flex-start; gap:.7rem;
+    }
+    .hint-row.mine { border-color:rgba(74,143,255,.3); background:rgba(74,143,255,.05); }
+    .hint-row.has-hint { border-color:rgba(212,160,23,.2); }
+    .hint-avatar { width:28px; height:28px; border-radius:7px; background:var(--surface2); display:flex; align-items:center; justify-content:center; font-size:.75rem; font-weight:700; flex-shrink:0; color:var(--text-muted); }
+    .hint-row.mine .hint-avatar { background:rgba(74,143,255,.2); color:var(--blue); }
+    .hint-body { flex:1; min-width:0; }
+    .hint-player-name { font-size:.65rem; font-weight:600; color:var(--text-muted); margin-bottom:.2rem; }
+    .hint-row.mine .hint-player-name { color:var(--blue); }
+    .hint-text { font-size:.82rem; color:var(--text); line-height:1.4; font-style:italic; }
+    .hint-text.empty { color:var(--text-muted); font-style:normal; font-size:.75rem; }
+    .hint-input-wrap { width:100%; margin:.5rem 0 .9rem; }
+    .hint-input-wrap textarea {
+      width:100%; background:var(--surface2); border:1.5px solid var(--border);
+      border-radius:11px; color:var(--text); font-family:inherit; font-size:.9rem;
+      padding:.75rem 1rem; outline:none; resize:none; transition:border-color .2s; line-height:1.5;
+    }
+    .hint-input-wrap textarea:focus { border-color:var(--gold); }
+    .hint-input-wrap textarea::placeholder { color:var(--text-muted); }
+    .hint-char { font-size:.65rem; color:var(--text-muted); text-align:right; margin-top:.25rem; }
+    .hints-title { font-size:.65rem; letter-spacing:.2em; text-transform:uppercase; color:var(--text-muted); margin-bottom:.4rem; }
+
+    /* ── ORDERING HOST/GUEST ── */
+    .ord-card.readonly { cursor:default; }
+    .ord-card.readonly .ord-handle { opacity:.2; cursor:default; }
+    .guest-ordering-note { font-size:.78rem; color:var(--text-muted); text-align:center; padding:.6rem; background:rgba(255,255,255,.02); border:1px solid var(--border); border-radius:10px; margin:.5rem 0; }
+
+    /* ── HOME BUTTONS ── */
+    .home-btns { display:flex; flex-direction:column; gap:.75rem; }
+    .btn-join {
+      width:100%; padding:.9rem; border-radius:13px; font-family:inherit;
+      font-size:.95rem; font-weight:600; cursor:pointer; transition:all .2s;
+      background:transparent; color:var(--text); border:1.5px solid rgba(212,160,23,.35);
+    }
+    .btn-join:hover { border-color:var(--gold); background:rgba(212,160,23,.07); transform:translateY(-2px); }
+    .btn-join:active { transform:translateY(0); }
+
     /* ── TOAST ── */
     #toast { position:fixed; bottom:1.5rem; left:50%; transform:translateX(-50%) translateY(80px); background:rgba(30,30,50,.95); border:1px solid rgba(255,255,255,.1); border-radius:12px; padding:.65rem 1.2rem; font-size:.8rem; color:var(--text); white-space:nowrap; z-index:200; transition:transform .3s ease; pointer-events:none; backdrop-filter:blur(10px); }
     #toast.show { transform:translateX(-50%) translateY(0); }
@@ -233,40 +275,57 @@
   <div class="logo">ito</div>
   <div class="logo-sub">Modo Competitivo</div>
   <div class="form-card">
+    <div class="home-btns">
+      <button class="btn btn-primary" onclick="showScreen('screen-create')">✦ Criar Sala</button>
+      <button class="btn btn-join" onclick="showScreen('screen-join')">→ Entrar em uma Sala</button>
+    </div>
+    <button class="btn btn-secondary" onclick="document.getElementById('modal-how').classList.add('open')" style="margin-top:.5rem">📖 Como jogar</button>
+  </div>
+</div>
+
+<!-- ══════════ SCREEN 1B — CRIAR SALA ══════════ -->
+<div id="screen-create" class="screen">
+  <div class="logo" style="font-size:3rem;margin-bottom:.25rem">ito</div>
+  <div class="logo-sub" style="margin-bottom:1.5rem">Criar Sala</div>
+  <div class="form-card">
     <div class="field">
-      <label>Código da Partida</label>
-      <div class="code-row">
-        <input type="text" id="gameCode" placeholder="Ex: FESTA24" maxlength="12" oninput="this.value=this.value.toUpperCase()">
-        <button class="btn-icon" onclick="randomCode()" title="Gerar código aleatório">🎲</button>
-      </div>
-    </div>
-    <div class="field-row">
-      <div class="field" style="margin-bottom:0">
-        <label>Nº de Jogadores</label>
-        <select id="numPlayers" onchange="updatePlayerSelect()">
-          <option value="2">2</option><option value="3">3</option>
-          <option value="4" selected>4</option><option value="5">5</option>
-          <option value="6">6</option><option value="7">7</option><option value="8">8</option>
-        </select>
-      </div>
-      <div class="field" style="margin-bottom:0">
-        <label>Você é</label>
-        <select id="myPlayer">
-          <option value="1">Jogador 1</option><option value="2">Jogador 2</option>
-          <option value="3">Jogador 3</option><option value="4">Jogador 4</option>
-        </select>
-      </div>
-    </div>
-    <div class="field" style="margin-top:1.25rem">
       <label>Seu Nome</label>
-      <input type="text" id="nickname" placeholder="Como quer ser chamado" maxlength="20">
+      <input type="text" id="create-nickname" placeholder="Como quer ser chamado" maxlength="20">
+    </div>
+    <div class="field">
+      <label>Nº de Jogadores</label>
+      <select id="create-numPlayers">
+        <option value="2">2 jogadores</option>
+        <option value="3">3 jogadores</option>
+        <option value="4" selected>4 jogadores</option>
+        <option value="5">5 jogadores</option>
+        <option value="6">6 jogadores</option>
+        <option value="7">7 jogadores</option>
+        <option value="8">8 jogadores</option>
+      </select>
+    </div>
+    <button class="btn btn-primary" onclick="createRoom()">Criar Sala →</button>
+    <button class="btn btn-secondary" onclick="showScreen('screen-home')">← Voltar</button>
+  </div>
+</div>
+
+<!-- ══════════ SCREEN 1C — ENTRAR NA SALA ══════════ -->
+<div id="screen-join" class="screen">
+  <div class="logo" style="font-size:3rem;margin-bottom:.25rem">ito</div>
+  <div class="logo-sub" style="margin-bottom:1.5rem">Entrar na Sala</div>
+  <div class="form-card">
+    <div class="field">
+      <label>Seu Nome</label>
+      <input type="text" id="join-nickname" placeholder="Como quer ser chamado" maxlength="20">
+    </div>
+    <div class="field">
+      <label>Código da Sala</label>
+      <div class="code-row">
+        <input type="text" id="join-code" placeholder="Ex: FESTA24" maxlength="12" oninput="this.value=this.value.toUpperCase()">
+      </div>
     </div>
     <button class="btn btn-primary" onclick="joinRoom()">Entrar na Sala →</button>
-    <button class="btn btn-secondary" onclick="document.getElementById('modal-how').classList.add('open')">📖 Como jogar</button>
-    <div class="seed-note" style="margin-top:1rem">
-      🔑 <strong>Mesmo código = mesma sala.</strong><br>
-      Jogador 1 cria a sala e inicia a partida.
-    </div>
+    <button class="btn btn-secondary" onclick="showScreen('screen-home')">← Voltar</button>
   </div>
 </div>
 
@@ -314,9 +373,20 @@
       <div class="tp-title">Escolha o Tema</div>
       <div class="tp-sub" id="tp-sub">Decidam juntos qual tema usar nesta rodada</div>
     </div>
-    <div style="display:flex;justify-content:center">
+
+    <!-- Seletor de grupo: só aparece para o host -->
+    <div id="tp-group-selector" style="display:none; margin-bottom:1rem;">
+      <div class="hints-title" style="margin-bottom:.5rem">Grupo de temas</div>
+      <select id="tp-group-select" onchange="onGroupChange(this.value)"
+        style="background:var(--surface2);border:1.5px solid rgba(212,160,23,.35);border-radius:11px;color:var(--text);font-family:inherit;font-size:.88rem;padding:.7rem 1rem;width:100%;outline:none;">
+      </select>
+    </div>
+
+    <!-- Badge visível para guests mostrando o grupo selecionado -->
+    <div id="tp-group-badge-wrap" style="display:flex;justify-content:center;margin-bottom:1rem;">
       <div class="tp-group-badge"><div class="dot"></div><span id="tp-group-label">Grupo —</span></div>
     </div>
+
     <div class="tp-grid" id="tp-grid"></div>
     <div class="tp-footer">
       <div id="tp-host-area" style="display:none">
@@ -352,12 +422,22 @@
         <div class="scale-max" id="scale-max">—</div>
       </div>
     </div>
-    <div class="hint-box">
-      💬 <strong>Dê uma dica</strong> relacionada ao tema sem citar números, valores ou quantidades.<br>
-      Ninguém pode mostrar ou revelar sua carta!
+
+    <div class="hints-title">Sua dica para os outros</div>
+    <div class="hint-input-wrap">
+      <textarea id="my-hint-input" rows="2" maxlength="120"
+        placeholder="Ex: A baleia mais forte do grupo..."
+        oninput="onHintInput(this)"></textarea>
+      <div class="hint-char"><span id="hint-char-count">0</span>/120</div>
     </div>
-    <div class="full-w">
-      <button class="btn btn-primary" onclick="goToOrdering()">Todos deram dicas → Ordenar</button>
+
+    <div class="hints-title">Dicas de todos</div>
+    <div class="hints-panel" id="card-hints-panel"></div>
+
+    <div class="full-w" style="margin-top:.75rem">
+      <button class="btn btn-primary" id="go-order-btn" onclick="goToOrdering()">
+        Todos deram dicas → Ordenar
+      </button>
     </div>
   </div>
 </div>
@@ -366,8 +446,8 @@
 <div id="screen-ordering" class="screen">
   <div class="ordering-wrap">
     <div class="ordering-head">
-      <div class="ordering-title">Ordene os Jogadores</div>
-      <div class="ordering-sub">Arraste do menor ao maior número</div>
+      <div class="ordering-title">Ordenar Jogadores</div>
+      <div class="ordering-sub" id="ord-sub">Arraste do menor ao maior número</div>
     </div>
     <div class="ordering-theme-mini">
       <div class="tn" id="ord-theme-name">—</div>
@@ -377,7 +457,11 @@
         <div class="sm-max" id="ord-scale-max">—</div>
       </div>
     </div>
-    <div class="scale-bar">
+
+    <div class="hints-title">Dicas dos jogadores</div>
+    <div class="hints-panel" id="ord-hints-panel"></div>
+
+    <div class="scale-bar" style="margin-top:.75rem">
       <div class="scale-bar-min" id="sb-min">menor</div>
       <div class="scale-bar-line"></div>
       <div class="scale-bar-max" id="sb-max">maior</div>
@@ -388,9 +472,16 @@
       <div class="scale-bar-line"></div>
       <div class="scale-bar-max" id="sb-max2">maior</div>
     </div>
-    <div style="margin-top:1.25rem">
+
+    <div id="ord-host-controls" style="margin-top:1.25rem">
       <button class="btn btn-primary" onclick="confirmOrdering()">Confirmar Ordem ✓</button>
       <button class="btn btn-secondary" onclick="showScreen('screen-card')">← Voltar</button>
+    </div>
+    <div id="ord-guest-controls" style="display:none;margin-top:1rem">
+      <div class="guest-ordering-note">
+        <div class="pulse-dot" style="display:inline-block;margin-right:.4rem;vertical-align:middle"></div>
+        Aguardando <strong>Jogador 1</strong> confirmar a ordem...
+      </div>
     </div>
   </div>
 </div>
@@ -594,23 +685,11 @@ function showScreen(id) {
 // ══════════════════════════════════
 // HELPERS
 // ══════════════════════════════════
-function randomCode() {
+function genCode() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   let c = '';
   for (let i = 0; i < 6; i++) c += chars[Math.floor(Math.random() * chars.length)];
-  document.getElementById('gameCode').value = c;
-}
-function updatePlayerSelect() {
-  const n = parseInt(document.getElementById('numPlayers').value);
-  const sel = document.getElementById('myPlayer');
-  const cur = parseInt(sel.value);
-  sel.innerHTML = '';
-  for (let i = 1; i <= n; i++) {
-    const o = document.createElement('option');
-    o.value = i; o.textContent = `Jogador ${i}`;
-    if (i === cur) o.selected = true;
-    sel.appendChild(o);
-  }
+  return c;
 }
 function toast(msg) {
   const t = document.getElementById('toast');
@@ -624,73 +703,108 @@ function copyCode() {
 }
 function computeGame(code, numPlayers, round = 1) {
   const rng = mulberry32(hashCode(code + '|r' + round));
+
+  // Sorteia 1 dos 20 grupos de 5 temas consecutivos (como na folha oficial)
   const groupIdx = Math.floor(rng() * 20);
-  const pool = Array.from({length:100},(_,i)=>i+1);
-  for (let i = pool.length-1; i > 0; i--) {
-    const j = Math.floor(rng()*(i+1));
-    [pool[i],pool[j]] = [pool[j],pool[i]];
+  const groupStart = groupIdx * 5;
+  const groupThemes = THEMES.slice(groupStart, groupStart + 5);
+  const themeNums = Array.from({length: 5}, (_, i) => groupStart + i + 1);
+
+  // Sorteia números dos jogadores
+  const pool = Array.from({length: 100}, (_, i) => i + 1);
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
   }
-  return { groupIdx, playerNumbers: pool.slice(0, numPlayers) };
+
+  return { groupThemes, themeNums, playerNumbers: pool.slice(0, numPlayers) };
 }
 
 // ══════════════════════════════════
-// JOIN ROOM
+// CREATE ROOM (host)
 // ══════════════════════════════════
-async function joinRoom() {
-  const code = document.getElementById('gameCode').value.trim().toUpperCase();
-  if (!code) { alert('Insira um código de partida!'); return; }
-  const numPlayersInput = parseInt(document.getElementById('numPlayers').value);
-  const myPlayerNum = parseInt(document.getElementById('myPlayer').value);
-  if (myPlayerNum > numPlayersInput) {
-    alert(`Você não pode ser Jogador ${myPlayerNum} em uma partida de ${numPlayersInput}!`); return;
-  }
+async function createRoom() {
+  const nickname = document.getElementById('create-nickname').value.trim() || 'Jogador 1';
+  const numPlayers = parseInt(document.getElementById('create-numPlayers').value);
 
-  const nickname = document.getElementById('nickname').value.trim() || `Jogador ${myPlayerNum}`;
+  const code = genCode();
   const roomRef = db.ref(`rooms/${code}`);
-  let numPlayers = numPlayersInput;
 
   try {
-    const snap = await roomRef.once('value');
-    const existing = snap.val();
+    await roomRef.set({
+      numPlayers, status:'lobby', round:1, createdAt:Date.now()
+    });
 
-    if (!existing) {
-      // Criar sala nova
-      await roomRef.set({ numPlayers, status:'lobby', hostPlayer:myPlayerNum, round:1, createdAt:Date.now() });
-    } else {
-      if (existing.status !== 'lobby') { alert('Esta partida já começou!'); return; }
-      if (existing.players && existing.players[myPlayerNum]) { alert(`Jogador ${myPlayerNum} já está na sala! Escolha outro número.`); return; }
-      numPlayers = existing.numPlayers;
-    }
-
-    // Registrar jogador
-    const playerRef = db.ref(`rooms/${code}/players/${myPlayerNum}`);
-    await playerRef.set({ joinedAt: Date.now(), name: nickname });
+    const playerRef = db.ref(`rooms/${code}/players/1`);
+    await playerRef.set({ joinedAt:Date.now(), name:nickname });
     playerRef.onDisconnect().remove();
 
-    // Ler round atual
-    const roomSnap = await roomRef.once('value');
-    const round = roomSnap.val()?.round || 1;
-
-    // Calcular jogo localmente (determinístico)
-    const { groupIdx, playerNumbers } = computeGame(code, numPlayers, round);
-
+    const { groupThemes, themeNums, playerNumbers } = computeGame(code, numPlayers, 1);
     Object.assign(state, {
-      gameCode: code, numPlayers, myPlayerNum, nickname,
-      isHost: myPlayerNum === 1, round,
-      groupIdx,
-      groupThemes: THEMES.slice(groupIdx*5, groupIdx*5+5),
-      firstThemeNum: groupIdx*5+1,
-      lastThemeNum: groupIdx*5+5,
-      playerNumbers,
-      myNumber: playerNumbers[myPlayerNum-1],
+      gameCode:code, numPlayers, myPlayerNum:1, nickname, isHost:true, round:1,
+      groupThemes, themeNums,
+      firstThemeNum: themeNums[0], lastThemeNum: themeNums[4],
+      playerNumbers, myNumber:playerNumbers[0],
       theme:null, selectedGroupLocal:null,
-      userOrder: Array.from({length:numPlayers},(_,i)=>i+1)
+      userOrder:Array.from({length:numPlayers},(_,i)=>i+1),
+      playerNames:{ 1: nickname }
     });
 
     document.getElementById('lobby-code-val').textContent = code;
     showScreen('screen-lobby');
     startRoomListener(code);
+  } catch(err) {
+    alert('Erro ao criar sala: ' + err.message);
+  }
+}
 
+// ══════════════════════════════════
+// JOIN ROOM (guest)
+// ══════════════════════════════════
+async function joinRoom() {
+  const nickname = document.getElementById('join-nickname').value.trim();
+  const code = document.getElementById('join-code').value.trim().toUpperCase();
+  if (!code) { alert('Insira o código da sala!'); return; }
+  if (!nickname) { alert('Insira seu nome!'); return; }
+
+  const roomRef = db.ref(`rooms/${code}`);
+
+  try {
+    const snap = await roomRef.once('value');
+    const existing = snap.val();
+
+    if (!existing) { alert('Sala não encontrada. Verifique o código!'); return; }
+    if (existing.status !== 'lobby') { alert('Esta partida já começou!'); return; }
+
+    // Encontrar próximo slot disponível
+    const taken = existing.players ? Object.keys(existing.players).map(Number) : [];
+    let myPlayerNum = null;
+    for (let i = 2; i <= existing.numPlayers; i++) {
+      if (!taken.includes(i)) { myPlayerNum = i; break; }
+    }
+    if (myPlayerNum === null) { alert('Sala cheia! Todos os slots já estão ocupados.'); return; }
+
+    const numPlayers = existing.numPlayers;
+    const round = existing.round || 1;
+
+    const playerRef = db.ref(`rooms/${code}/players/${myPlayerNum}`);
+    await playerRef.set({ joinedAt:Date.now(), name:nickname });
+    playerRef.onDisconnect().remove();
+
+    const { groupThemes, themeNums, playerNumbers } = computeGame(code, numPlayers, round);
+    Object.assign(state, {
+      gameCode:code, numPlayers, myPlayerNum, nickname, isHost:false, round,
+      groupThemes, themeNums,
+      firstThemeNum: themeNums[0], lastThemeNum: themeNums[4],
+      playerNumbers, myNumber:playerNumbers[myPlayerNum-1],
+      theme:null, selectedGroupLocal:null,
+      userOrder:Array.from({length:numPlayers},(_,i)=>i+1),
+      playerNames:{}
+    });
+
+    document.getElementById('lobby-code-val').textContent = code;
+    showScreen('screen-lobby');
+    startRoomListener(code);
   } catch(err) {
     alert('Erro ao entrar na sala: ' + err.message);
   }
@@ -706,19 +820,23 @@ function startRoomListener(code) {
     if (!data) return;
     const cur = document.querySelector('.screen.active')?.id;
 
-    // Nova rodada: host incrementou round e resetou status para 'lobby'
-    if (data.status === 'lobby' && cur && cur !== 'screen-lobby' && cur !== 'screen-home') {
+    // Sempre coleta nomes
+    if (data.players) {
+      Object.entries(data.players).forEach(([num, p]) => {
+        if (p?.name) state.playerNames[num] = p.name;
+      });
+    }
+
+    // Nova rodada: host incrementou round
+    if (data.status === 'lobby' && cur && cur !== 'screen-lobby' && cur !== 'screen-home'
+        && cur !== 'screen-create' && cur !== 'screen-join') {
       const newRound = data.round || 1;
       if (newRound !== state.round) {
-        // Recomputa jogo com novo round
-        const { groupIdx, playerNumbers } = computeGame(state.gameCode, state.numPlayers, newRound);
+        const { groupThemes, themeNums, playerNumbers } = computeGame(state.gameCode, state.numPlayers, newRound);
         Object.assign(state, {
-          round: newRound, groupIdx,
-          groupThemes: THEMES.slice(groupIdx*5, groupIdx*5+5),
-          firstThemeNum: groupIdx*5+1,
-          lastThemeNum: groupIdx*5+5,
-          playerNumbers,
-          myNumber: playerNumbers[state.myPlayerNum-1],
+          round: newRound, groupThemes, themeNums,
+          firstThemeNum: themeNums[0], lastThemeNum: themeNums[4],
+          playerNumbers, myNumber: playerNumbers[state.myPlayerNum-1],
           theme:null, selectedGroupLocal:null,
           userOrder: Array.from({length:state.numPlayers},(_,i)=>i+1)
         });
@@ -729,17 +847,39 @@ function startRoomListener(code) {
     if (cur === 'screen-lobby') updateLobbyUI(data);
     if (cur === 'screen-theme-pick') updateThemeSyncUI(data);
 
-    // Transição: lobby → tema
-    if (data.status === 'theme-pick' && cur === 'screen-lobby') {
-      renderThemePicker();
-      showScreen('screen-theme-pick');
+    // Atualiza hints em tempo real na tela de carta e ordenação
+    if (cur === 'screen-card') renderHintsPanel('card-hints-panel', data.hints || {});
+    if (cur === 'screen-ordering') {
+      renderHintsPanel('ord-hints-panel', data.hints || {});
+      // Guests veem a ordem do host em tempo real
+      if (!state.isHost && data.currentOrder) {
+        state.userOrder = data.currentOrder;
+        renderOrderCards();
+      }
     }
-    // Transição: tema → carta (tema confirmado)
+
+    // Lobby → tema
+    if (data.status === 'theme-pick' && cur === 'screen-lobby') {
+      renderThemePicker(); showScreen('screen-theme-pick');
+    }
+    // Tema → carta
     if (data.status === 'playing' && data.selectedTheme !== undefined && cur === 'screen-theme-pick') {
+      const grp = data.selectedGroup !== undefined ? data.selectedGroup : state.groupIdx;
+      if (grp !== state.groupIdx) renderThemePicker(grp);
       state.selectedGroupLocal = data.selectedTheme;
       state.theme = state.groupThemes[data.selectedTheme];
       applyThemeToScreens();
+      renderHintsPanel('card-hints-panel', data.hints || {});
       showScreen('screen-card');
+    }
+    // Carta → ordenação (host manda todos para ordenar)
+    if (data.status === 'ordering' && (cur === 'screen-card' || cur === 'screen-theme-pick')) {
+      goToOrdering();
+    }
+    // Ordenação → resultado (host confirmou)
+    if (data.status === 'results' && data.finalOrder && cur === 'screen-ordering' && !state.isHost) {
+      state.userOrder = data.finalOrder;
+      showResults();
     }
   });
 }
@@ -817,21 +957,55 @@ async function hostStartGame() {
 // ══════════════════════════════════
 // THEME PICKER
 // ══════════════════════════════════
-function renderThemePicker() {
-  document.getElementById('tp-group-label').textContent =
-    `Grupo ${state.firstThemeNum}–${state.lastThemeNum}`;
+function renderThemePicker(selectedGroupIdx) {
+  const gIdx = selectedGroupIdx !== undefined ? selectedGroupIdx : state.groupIdx;
+
+  // Atualiza state com grupo selecionado
+  state.groupIdx = gIdx;
+  state.groupThemes = THEMES.slice(gIdx * 5, gIdx * 5 + 5);
+  state.themeNums = Array.from({length: 5}, (_, i) => gIdx * 5 + i + 1);
+  state.firstThemeNum = state.themeNums[0];
+  state.lastThemeNum = state.themeNums[4];
+  state.selectedGroupLocal = null;
+
   document.getElementById('tp-sub').textContent =
     state.isHost ? 'Selecione um tema e confirme para todos.' : 'O Jogador 1 está escolhendo o tema...';
+
+  // Badge para guests
+  document.getElementById('tp-group-label').textContent =
+    `Grupo ${state.firstThemeNum}–${state.lastThemeNum}`;
+
+  // Seletor de grupo (só host)
+  if (state.isHost) {
+    document.getElementById('tp-group-selector').style.display = 'block';
+    document.getElementById('tp-group-badge-wrap').style.display = 'none';
+    const sel = document.getElementById('tp-group-select');
+    // Preenche opções se ainda não foi preenchido
+    if (sel.options.length === 0) {
+      for (let g = 0; g < 20; g++) {
+        const start = g * 5 + 1, end = g * 5 + 5;
+        const opt = document.createElement('option');
+        opt.value = g;
+        opt.textContent = `Grupo ${start}–${end}`;
+        sel.appendChild(opt);
+      }
+    }
+    sel.value = gIdx;
+  } else {
+    document.getElementById('tp-group-selector').style.display = 'none';
+    document.getElementById('tp-group-badge-wrap').style.display = 'flex';
+  }
 
   document.getElementById('tp-host-area').style.display = state.isHost ? 'block' : 'none';
   document.getElementById('tp-guest-area').style.display = state.isHost ? 'none' : 'block';
 
+  // Renderiza os 5 temas do grupo
   const grid = document.getElementById('tp-grid');
   grid.innerHTML = '';
   state.groupThemes.forEach((theme, i) => {
-    const themeNum = state.firstThemeNum + i;
+    const themeNum = state.themeNums[i];
     const card = document.createElement('div');
-    card.className = `tp-card${state.isHost?' interactive':''}`;
+    card.className = `tp-card${state.isHost ? ' interactive' : ''}`;
     card.dataset.i = i;
     card.innerHTML = `
       <div class="tp-num">${themeNum}</div>
@@ -845,9 +1019,7 @@ function renderThemePicker() {
       </div>
       <div class="tp-check">✓</div>
     `;
-    if (state.isHost) {
-      card.addEventListener('click', () => selectThemeLocal(i));
-    }
+    if (state.isHost) card.addEventListener('click', () => selectThemeLocal(i));
     grid.appendChild(card);
   });
 
@@ -855,6 +1027,13 @@ function renderThemePicker() {
     const btn = document.getElementById('tp-confirm-btn');
     btn.disabled = true;
   }
+}
+
+function onGroupChange(val) {
+  const gIdx = parseInt(val);
+  renderThemePicker(gIdx);
+  // Sincroniza grupo escolhido com Firebase para guests verem
+  db.ref(`rooms/${state.gameCode}/pendingGroup`).set(gIdx);
 }
 
 function selectThemeLocal(localIdx) {
@@ -868,9 +1047,19 @@ function selectThemeLocal(localIdx) {
 }
 
 function updateThemeSyncUI(data) {
-  // Guests see the host's pending selection in real-time
-  if (!state.isHost && data.pendingTheme !== undefined) {
-    document.querySelectorAll('.tp-card').forEach((c,i) => c.classList.toggle('selected', i===data.pendingTheme));
+  if (!state.isHost) {
+    // Sync grupo
+    if (data.pendingGroup !== undefined && data.pendingGroup !== state.groupIdx) {
+      renderThemePicker(data.pendingGroup);
+    }
+    // Sync tema selecionado dentro do grupo
+    if (data.pendingTheme !== undefined) {
+      document.querySelectorAll('.tp-card').forEach((c, i) =>
+        c.classList.toggle('selected', i === data.pendingTheme));
+    }
+    // Atualiza badge do grupo
+    document.getElementById('tp-group-label').textContent =
+      `Grupo ${state.firstThemeNum}–${state.lastThemeNum}`;
   }
 }
 
@@ -879,20 +1068,23 @@ async function confirmTheme() {
   state.theme = state.groupThemes[state.selectedGroupLocal];
   await db.ref(`rooms/${state.gameCode}`).update({
     status: 'playing',
-    selectedTheme: state.selectedGroupLocal
+    selectedTheme: state.selectedGroupLocal,
+    selectedGroup: state.groupIdx,
+    pendingGroup: null, pendingTheme: null
   });
   applyThemeToScreens();
+  renderHintsPanel('card-hints-panel', {});
   showScreen('screen-card');
 }
 
 function applyThemeToScreens() {
   const theme = state.theme;
-  const themeNum = state.firstThemeNum + state.selectedGroupLocal;
   const n = state.myNumber;
   document.getElementById('corner-tl').textContent = n;
   document.getElementById('corner-br').textContent = n;
   document.getElementById('my-number').textContent = n;
-  document.getElementById('theme-group-badge').textContent = `Tema #${themeNum} · Grupo ${state.firstThemeNum}–${state.lastThemeNum}`;
+  document.getElementById('theme-group-badge').textContent =
+    `Tema #${state.themeNums[state.selectedGroupLocal]}`;
   document.getElementById('theme-name').textContent = theme.name;
   document.getElementById('scale-min').textContent = theme.min;
   document.getElementById('scale-max').textContent = theme.max;
@@ -918,15 +1110,81 @@ function playerLabel(num) {
   return state.playerNames[num] || `Jogador ${num}`;
 }
 
+// ══════════════════════════════════
+// HINTS
+// ══════════════════════════════════
+function onHintInput(el) {
+  const val = el.value;
+  document.getElementById('hint-char-count').textContent = val.length;
+  // Salva no Firebase com debounce
+  clearTimeout(el._t);
+  el._t = setTimeout(() => {
+    db.ref(`rooms/${state.gameCode}/hints/${state.myPlayerNum}`).set(val.trim() || null);
+  }, 400);
+}
+
+function renderHintsPanel(panelId, hints) {
+  const panel = document.getElementById(panelId);
+  if (!panel) return;
+  panel.innerHTML = '';
+  for (let i = 1; i <= state.numPlayers; i++) {
+    const isMe = i === state.myPlayerNum;
+    const name = state.playerNames[i] || `Jogador ${i}`;
+    const hint = hints[i] || '';
+    const row = document.createElement('div');
+    row.className = `hint-row${isMe?' mine':''}${hint?' has-hint':''}`;
+    row.innerHTML = `
+      <div class="hint-avatar">${i}</div>
+      <div class="hint-body">
+        <div class="hint-player-name">${name}${isMe?' (Você)':''}</div>
+        <div class="hint-text${hint?'':' empty'}">${hint || 'Ainda não digitou a dica...'}</div>
+      </div>
+    `;
+    panel.appendChild(row);
+  }
+}
+
+// ══════════════════════════════════
+// ORDERING
+// ══════════════════════════════════
+async function goToOrdering() {
+  state.userOrder = Array.from({length:state.numPlayers},(_,i)=>i+1);
+
+  // Host avisa todos que é hora de ordenar e publica ordem inicial
+  if (state.isHost) {
+    await db.ref(`rooms/${state.gameCode}`).update({
+      status: 'ordering',
+      currentOrder: state.userOrder
+    });
+  }
+
+  // Busca hints atuais
+  const snap = await db.ref(`rooms/${state.gameCode}/hints`).once('value');
+  const hints = snap.val() || {};
+  renderHintsPanel('ord-hints-panel', hints);
+
+  // Controles host vs guest
+  document.getElementById('ord-host-controls').style.display = state.isHost ? 'block' : 'none';
+  document.getElementById('ord-guest-controls').style.display = state.isHost ? 'none' : 'block';
+  document.getElementById('ord-sub').textContent = state.isHost
+    ? 'Arraste do menor ao maior número'
+    : 'Visualizando a ordenação do Jogador 1';
+
+  renderOrderCards();
+  showScreen('screen-ordering');
+}
+
 let dragIdx = null;
 function renderOrderCards() {
   const list = document.getElementById('cards-list');
   list.innerHTML = '';
+  const canDrag = state.isHost;
+
   state.userOrder.forEach((playerNum, idx) => {
     const isMe = playerNum === state.myPlayerNum;
     const card = document.createElement('div');
-    card.className = `ord-card${isMe?' is-me':''}`;
-    card.draggable = true;
+    card.className = `ord-card${isMe?' is-me':''}${!canDrag?' readonly':''}`;
+    card.draggable = canDrag;
     card.dataset.idx = idx;
     card.innerHTML = `
       <div class="ord-pos">${idx+1}º</div>
@@ -937,15 +1195,30 @@ function renderOrderCards() {
       </div>
       <div class="ord-handle">⠿</div>
     `;
-    card.addEventListener('dragstart', e => { dragIdx=idx; setTimeout(()=>card.classList.add('dragging'),0); e.dataTransfer.effectAllowed='move'; });
-    card.addEventListener('dragend', () => { card.classList.remove('dragging'); document.querySelectorAll('.ord-card').forEach(c=>c.classList.remove('drag-over')); dragIdx=null; });
-    card.addEventListener('dragover', e => { e.preventDefault(); document.querySelectorAll('.ord-card').forEach(c=>c.classList.remove('drag-over')); card.classList.add('drag-over'); });
-    card.addEventListener('drop', e => { e.preventDefault(); if(dragIdx===null||dragIdx===idx)return; const[m]=state.userOrder.splice(dragIdx,1); state.userOrder.splice(idx,0,m); renderOrderCards(); });
-    // Touch
-    let ty=0;
-    card.addEventListener('touchstart',e=>{ty=e.touches[0].clientY;dragIdx=idx;},{passive:true});
-    card.addEventListener('touchmove',e=>{e.preventDefault();const el=document.elementFromPoint(e.touches[0].clientX,e.touches[0].clientY);const t=el&&el.closest('.ord-card');document.querySelectorAll('.ord-card').forEach(c=>c.classList.remove('drag-over'));if(t&&t!==card)t.classList.add('drag-over');},{passive:false});
-    card.addEventListener('touchend',e=>{const el=document.elementFromPoint(e.changedTouches[0].clientX,e.changedTouches[0].clientY);const t=el&&el.closest('.ord-card');if(t&&dragIdx!==null){const ti=parseInt(t.dataset.idx);if(!isNaN(ti)&&ti!==dragIdx){const[m]=state.userOrder.splice(dragIdx,1);state.userOrder.splice(ti,0,m);renderOrderCards();return;}}document.querySelectorAll('.ord-card').forEach(c=>c.classList.remove('drag-over'));dragIdx=null;});
+
+    if (canDrag) {
+      card.addEventListener('dragstart', e => { dragIdx=idx; setTimeout(()=>card.classList.add('dragging'),0); e.dataTransfer.effectAllowed='move'; });
+      card.addEventListener('dragend', () => { card.classList.remove('dragging'); document.querySelectorAll('.ord-card').forEach(c=>c.classList.remove('drag-over')); dragIdx=null; });
+      card.addEventListener('dragover', e => { e.preventDefault(); document.querySelectorAll('.ord-card').forEach(c=>c.classList.remove('drag-over')); card.classList.add('drag-over'); });
+      card.addEventListener('drop', e => {
+        e.preventDefault();
+        if (dragIdx===null||dragIdx===idx) return;
+        const[m]=state.userOrder.splice(dragIdx,1);
+        state.userOrder.splice(idx,0,m);
+        // Sincroniza ordem com Firebase em tempo real
+        db.ref(`rooms/${state.gameCode}/currentOrder`).set(state.userOrder);
+        renderOrderCards();
+      });
+      // Touch
+      card.addEventListener('touchstart',e=>{dragIdx=idx;},{passive:true});
+      card.addEventListener('touchmove',e=>{e.preventDefault();const el=document.elementFromPoint(e.touches[0].clientX,e.touches[0].clientY);const t=el&&el.closest('.ord-card');document.querySelectorAll('.ord-card').forEach(c=>c.classList.remove('drag-over'));if(t&&t!==card)t.classList.add('drag-over');},{passive:false});
+      card.addEventListener('touchend',e=>{
+        const el=document.elementFromPoint(e.changedTouches[0].clientX,e.changedTouches[0].clientY);
+        const t=el&&el.closest('.ord-card');
+        if(t&&dragIdx!==null){const ti=parseInt(t.dataset.idx);if(!isNaN(ti)&&ti!==dragIdx){const[m]=state.userOrder.splice(dragIdx,1);state.userOrder.splice(ti,0,m);db.ref(`rooms/${state.gameCode}/currentOrder`).set(state.userOrder);renderOrderCards();return;}}
+        document.querySelectorAll('.ord-card').forEach(c=>c.classList.remove('drag-over'));dragIdx=null;
+      });
+    }
     list.appendChild(card);
   });
 }
@@ -953,7 +1226,17 @@ function renderOrderCards() {
 // ══════════════════════════════════
 // RESULTS
 // ══════════════════════════════════
-function confirmOrdering() {
+async function confirmOrdering() {
+  if (!state.isHost) return;
+  // Publica ordem final → todos vão para resultado
+  await db.ref(`rooms/${state.gameCode}`).update({
+    status: 'results',
+    finalOrder: state.userOrder
+  });
+  showResults();
+}
+
+function showResults() {
   const actualOrder = Array.from({length:state.numPlayers},(_,i)=>i+1)
     .sort((a,b)=>state.playerNumbers[a-1]-state.playerNumbers[b-1]);
   let correct = 0;
@@ -976,7 +1259,7 @@ function confirmOrdering() {
       <div class="res-pos">${pos+1}º</div>
       <div class="res-info">
         <div class="res-player">${playerLabel(playerNum)}${isMe?' <span style="color:var(--blue);font-size:.75rem">(Você)</span>':''}</div>
-        <div class="res-num">Número: <strong>${state.playerNumbers[playerNum-1]}</strong>${isCorrect?' · ✓ Correto!':`· Você pôs em ${userPos+1}º (${diff} posição${diff>1?'ões':''} de distância)`}</div>
+        <div class="res-num">Número: <strong>${state.playerNumbers[playerNum-1]}</strong>${isCorrect?' · ✓ Correto!':` · colocado em ${userPos+1}º (${diff} posição${diff>1?'ões':''} de distância)`}</div>
       </div>
       <div class="res-icon">${isCorrect?'✓':'✗'}</div>
     `;
@@ -993,11 +1276,8 @@ function confirmOrdering() {
 // ══════════════════════════════════
 async function leaveRoom() {
   if (state.gameCode) {
-    try {
-      await db.ref(`rooms/${state.gameCode}/players/${state.myPlayerNum}`).remove();
-    } catch(e) {}
-    if (roomListener) db.ref(`rooms/${state.gameCode}`).off();
-    roomListener = null;
+    try { await db.ref(`rooms/${state.gameCode}/players/${state.myPlayerNum}`).remove(); } catch(e) {}
+    if (roomListener) { db.ref(`rooms/${state.gameCode}`).off(); roomListener = null; }
   }
   showScreen('screen-home');
 }
@@ -1009,10 +1289,9 @@ async function newRound() {
   }
   const nextRound = (state.round || 1) + 1;
   await db.ref(`rooms/${state.gameCode}`).update({
-    status: 'lobby',
-    round: nextRound,
-    selectedTheme: null,
-    pendingTheme: null
+    status: 'lobby', round: nextRound,
+    selectedTheme: null, pendingTheme: null, pendingGroup: null,
+    selectedGroup: null, currentOrder: null, finalOrder: null, hints: null
   });
   // O listener detecta a mudança e navega todos para o lobby
 }
