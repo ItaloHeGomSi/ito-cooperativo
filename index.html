@@ -994,7 +994,7 @@ async function joinRoom() {
     if (existing.status !== 'lobby') { alert('Esta partida já começou!'); return; }
     const taken = existing.players ? Object.keys(existing.players).map(Number) : [];
     let myPlayerNum = null;
-    for (let i = 2; i <= 8; i++) { if (!taken.includes(i)) { myPlayerNum = i; break; } }
+    for (let i = 2; i <= 10; i++) { if (!taken.includes(i)) { myPlayerNum = i; break; } }
     if (myPlayerNum === null) { alert('Sala cheia!'); return; }
 
     const numPlayers = existing.numPlayers || 0;
