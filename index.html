@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ITO — Competitivo</title>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
-  <!-- Firebase Compat SDK -->
   <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-database-compat.js"></script>
   <style>
@@ -17,16 +16,23 @@
       --gold:#d4a017; --gold-light:#f2c040;
       --correct:#27ae60; --wrong:#e74c3c; --blue:#4a8fff;
       --border:rgba(255,255,255,0.07);
+      --glow1:rgba(212,160,23,.05); --glow2:rgba(74,143,255,.04);
     }
     body { font-family:'DM Sans',system-ui,sans-serif; background:var(--bg); color:var(--text); min-height:100vh; overflow-x:hidden; }
     body::after {
       content:''; position:fixed; inset:0; pointer-events:none; z-index:0;
-      background:radial-gradient(ellipse 60% 50% at 80% 10%,rgba(212,160,23,.05) 0%,transparent 60%),
-                 radial-gradient(ellipse 50% 40% at 10% 90%,rgba(74,143,255,.04) 0%,transparent 60%);
+      background:radial-gradient(ellipse 60% 50% at 80% 10%,var(--glow1) 0%,transparent 60%),
+                 radial-gradient(ellipse 50% 40% at 10% 90%,var(--glow2) 0%,transparent 60%);
+      transition:background .5s;
     }
     .screen { display:none; min-height:100vh; flex-direction:column; align-items:center; justify-content:center; padding:1.5rem; animation:fadeUp .35s ease; position:relative; z-index:1; }
     .screen.active { display:flex; }
-    @keyframes fadeUp { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
+    @keyframes fadeUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+    @keyframes popIn { from{transform:scale(.4) rotate(-8deg);opacity:0} to{transform:scale(1) rotate(0);opacity:1} }
+    @keyframes slideIn { from{opacity:0;transform:translateX(-12px)} to{opacity:1;transform:translateX(0)} }
+    @keyframes pulseDot { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.35;transform:scale(.7)} }
+    @keyframes bounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
+    @keyframes countUp { from{opacity:0;transform:scale(.5)} to{opacity:1;transform:scale(1)} }
 
     /* ── SHARED ── */
     .btn { width:100%; padding:.9rem; border:none; border-radius:13px; font-family:inherit; font-size:.95rem; font-weight:600; cursor:pointer; transition:all .2s; letter-spacing:.03em; }
@@ -40,20 +46,21 @@
     .btn-danger:hover { background:rgba(231,76,60,.08); border-color:#e74c3c; }
     .field { margin-bottom:1.25rem; }
     .field label { display:block; font-size:.68rem; letter-spacing:.18em; text-transform:uppercase; color:var(--gold); font-weight:600; margin-bottom:.45rem; }
-    .field-row { display:grid; grid-template-columns:1fr 1fr; gap:.75rem; }
     input, select { width:100%; background:var(--surface2); border:1px solid var(--border); border-radius:11px; color:var(--text); font-family:inherit; font-size:.95rem; padding:.8rem 1rem; outline:none; transition:border-color .2s; }
     input:focus, select:focus { border-color:var(--gold); }
-    select option { background:#1a1a2e; }
+    select option { background:var(--surface2); }
     .label-tag { font-size:.65rem; letter-spacing:.25em; text-transform:uppercase; color:var(--text-muted); margin-bottom:.5rem; }
 
     /* ── HOME ── */
     .logo { font-family:'Playfair Display',serif; font-size:clamp(4rem,12vw,6rem); font-weight:900; color:var(--gold); letter-spacing:-3px; line-height:1; text-shadow:0 0 60px rgba(212,160,23,.25); }
     .logo-sub { font-size:.7rem; letter-spacing:.35em; text-transform:uppercase; color:var(--text-muted); text-align:center; margin-bottom:2.5rem; }
     .form-card { background:var(--surface); border:1px solid rgba(212,160,23,.15); border-radius:22px; padding:2rem; width:100%; max-width:400px; box-shadow:0 30px 80px rgba(0,0,0,.4); }
+    .home-btns { display:flex; flex-direction:column; gap:.75rem; }
+    .btn-join { width:100%; padding:.9rem; border-radius:13px; font-family:inherit; font-size:.95rem; font-weight:600; cursor:pointer; transition:all .2s; background:transparent; color:var(--text); border:1.5px solid rgba(212,160,23,.35); }
+    .btn-join:hover { border-color:var(--gold); background:rgba(212,160,23,.07); transform:translateY(-2px); }
+    .btn-join:active { transform:translateY(0); }
     .code-row { display:flex; gap:.5rem; }
     .code-row input { flex:1; font-weight:600; letter-spacing:.1em; text-transform:uppercase; }
-    .btn-icon { background:var(--surface2); border:1px solid var(--border); border-radius:11px; padding:0 .9rem; cursor:pointer; font-size:1.1rem; color:var(--text-muted); transition:all .2s; flex-shrink:0; }
-    .btn-icon:hover { border-color:var(--gold); color:var(--gold); }
     .seed-note { font-size:.72rem; color:var(--text-muted); text-align:center; margin-top:1rem; line-height:1.6; padding:.75rem 1rem; background:rgba(212,160,23,.05); border-radius:10px; border:1px solid rgba(212,160,23,.12); }
     .seed-note strong { color:var(--gold); }
 
@@ -62,47 +69,41 @@
     .lobby-header { text-align:center; margin-bottom:1.5rem; }
     .lobby-title { font-family:'Playfair Display',serif; font-size:1.7rem; font-weight:700; }
     .lobby-subtitle { font-size:.75rem; color:var(--text-muted); margin-top:.25rem; }
-    .lobby-code-box {
-      background:var(--surface); border:1px solid rgba(212,160,23,.25);
-      border-radius:16px; padding:1rem 1.25rem; text-align:center; margin-bottom:1.25rem;
-    }
+    .lobby-code-box { background:var(--surface); border:1px solid rgba(212,160,23,.25); border-radius:16px; padding:1rem 1.25rem; text-align:center; margin-bottom:1.25rem; }
     .lobby-code-lbl { font-size:.62rem; letter-spacing:.18em; text-transform:uppercase; color:var(--text-muted); margin-bottom:.35rem; }
     .lobby-code-val { font-family:'Playfair Display',serif; font-size:2rem; font-weight:900; color:var(--gold); letter-spacing:.12em; cursor:pointer; transition:opacity .2s; }
     .lobby-code-val:hover { opacity:.75; }
     .lobby-code-hint { font-size:.65rem; color:var(--text-muted); margin-top:.25rem; }
     .lobby-players-grid { display:flex; flex-direction:column; gap:.5rem; margin-bottom:1.25rem; }
-    .lp-slot {
-      background:var(--surface); border:1.5px solid var(--border);
-      border-radius:13px; padding:.8rem 1.1rem;
-      display:flex; align-items:center; gap:.9rem; transition:all .25s;
-    }
+    .lp-slot { background:var(--surface); border:1.5px solid var(--border); border-radius:13px; padding:.8rem 1.1rem; display:flex; align-items:center; gap:.9rem; transition:all .3s; animation:slideIn .3s ease; }
     .lp-slot.joined { border-color:var(--correct); background:rgba(39,174,96,.07); }
     .lp-slot.is-me { border-color:var(--blue); background:rgba(74,143,255,.07); }
-    .lp-slot.is-me.joined { border-color:var(--blue); }
-    .lp-avatar {
-      width:38px; height:38px; border-radius:10px; flex-shrink:0;
-      display:flex; align-items:center; justify-content:center;
-      font-weight:700; font-size:.9rem; background:var(--surface2); color:var(--text-muted); transition:all .25s;
-    }
-    .lp-slot.joined .lp-avatar { background:rgba(39,174,96,.2); color:var(--correct); }
-    .lp-slot.is-me .lp-avatar { background:rgba(74,143,255,.2); color:var(--blue); }
+    .lp-num { width:38px; height:38px; border-radius:10px; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:.9rem; background:var(--surface2); color:var(--text-muted); transition:all .25s; }
+    .lp-slot.joined .lp-num { background:rgba(39,174,96,.15); color:var(--correct); }
+    .lp-slot.is-me .lp-num { background:rgba(74,143,255,.15); color:var(--blue); }
     .lp-info { flex:1; }
     .lp-name { font-weight:600; font-size:.9rem; }
     .lp-tag { font-size:.65rem; margin-top:2px; }
     .lp-slot.joined .lp-tag { color:var(--correct); }
-    .lp-slot:not(.joined) .lp-tag { color:var(--text-muted); }
     .lp-slot.is-me .lp-tag { color:var(--blue); }
     .lp-icon { font-size:1rem; }
-    .lobby-status-bar {
-      display:flex; align-items:center; gap:.6rem; justify-content:center;
-      font-size:.78rem; color:var(--text-muted); margin-bottom:1rem;
-    }
+    .lobby-status-bar { display:flex; align-items:center; gap:.6rem; justify-content:center; font-size:.78rem; color:var(--text-muted); margin-bottom:1rem; }
     .pulse-dot { width:8px; height:8px; border-radius:50%; background:var(--gold); animation:pulseDot 1.4s ease-in-out infinite; flex-shrink:0; }
-    @keyframes pulseDot { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.35;transform:scale(.7)} }
-    .pulse-dot.green { background:var(--correct); animation:none; }
+    .pulse-dot.green { background:var(--correct); animation:bounce 1s ease-in-out infinite; }
     .host-badge { display:inline-flex; align-items:center; gap:.3rem; background:rgba(212,160,23,.1); border:1px solid rgba(212,160,23,.2); border-radius:20px; padding:.2rem .7rem; font-size:.62rem; font-weight:600; color:var(--gold); letter-spacing:.08em; text-transform:uppercase; }
 
-    /* ── THEME PICKER ── */
+    .lp-kick {
+      background: rgba(231,76,60,.1); border: 1px solid rgba(231,76,60,.25);
+      color: #e74c3c; border-radius: 8px; padding: .25rem .6rem;
+      font-size: .65rem; font-weight: 700; cursor: pointer;
+      letter-spacing: .05em; text-transform: uppercase;
+      transition: all .15s; flex-shrink: 0;
+    }
+    .lp-kick:hover { background: rgba(231,76,60,.25); border-color: #e74c3c; }
+    .kicked-msg {
+      text-align: center; padding: 1.5rem 1rem;
+      font-size: .9rem; color: var(--wrong);
+    }
     .theme-picker-wrap { width:100%; max-width:480px; }
     .tp-header { text-align:center; margin-bottom:1.25rem; }
     .tp-title { font-family:'Playfair Display',serif; font-size:1.7rem; font-weight:700; }
@@ -130,67 +131,89 @@
     .tp-hint { font-size:.74rem; color:var(--text-muted); text-align:center; margin-bottom:.8rem; }
     .waiting-msg { display:flex; align-items:center; justify-content:center; gap:.6rem; padding:.8rem; background:rgba(255,255,255,.02); border:1px solid var(--border); border-radius:12px; font-size:.8rem; color:var(--text-muted); }
 
-    /* ── CARD REVEAL ── */
+    /* ── ROLETA ── */
+    .roulette-wrap { width:100%; margin-bottom:1rem; }
+    .roulette-drum-outer {
+      position:relative; width:100%; height:130px; border-radius:16px;
+      overflow:hidden; background:var(--surface2);
+      border:1.5px solid rgba(212,160,23,.3);
+      box-shadow:inset 0 0 40px rgba(0,0,0,.4), 0 0 0 1px rgba(212,160,23,.08);
+      transition:box-shadow .4s;
+    }
+    .roulette-drum-outer.spinning {
+      box-shadow:inset 0 0 40px rgba(0,0,0,.4), 0 0 24px rgba(212,160,23,.2), 0 0 0 1px rgba(212,160,23,.35);
+    }
+    .roulette-drum-outer::before, .roulette-drum-outer::after {
+      content:''; position:absolute; left:0; right:0; height:44px; z-index:3; pointer-events:none;
+    }
+    .roulette-drum-outer::before { top:0; background:linear-gradient(to bottom,var(--surface2) 0%,rgba(26,26,46,.85) 55%,transparent 100%); }
+    .roulette-drum-outer::after  { bottom:0; background:linear-gradient(to top,var(--surface2) 0%,rgba(26,26,46,.85) 55%,transparent 100%); }
+    .roulette-window {
+      position:absolute; left:0; right:0; top:50%; transform:translateY(-50%);
+      height:44px; z-index:2; pointer-events:none;
+      border-top:1.5px solid rgba(212,160,23,.5);
+      border-bottom:1.5px solid rgba(212,160,23,.5);
+      background:rgba(212,160,23,.04);
+      transition:background .3s, border-color .4s, box-shadow .4s;
+    }
+    .roulette-drum-outer.landing .roulette-window {
+      background:rgba(212,160,23,.12);
+      border-color:var(--gold-light);
+      box-shadow:0 0 20px rgba(212,160,23,.25) inset;
+    }
+    .roulette-drum { position:absolute; left:0; right:0; top:0; display:flex; flex-direction:column; align-items:center; will-change:transform; }
+    .roulette-item {
+      height:42px; line-height:42px; width:100%; text-align:center;
+      font-size:.8rem; font-weight:600; flex-shrink:0; padding:0 1rem;
+      transition:color .2s, filter .2s;
+      color:rgba(255,255,255,.45); filter:blur(0);
+    }
+    .roulette-item.near-2 { color:rgba(255,255,255,.65); }
+    .roulette-item.near-1 { color:rgba(255,255,255,.82); font-size:.84rem; }
+    .roulette-item.center {
+      color:var(--gold); font-size:.98rem; font-weight:700;
+      filter:blur(0); letter-spacing:.02em;
+    }
+    .roulette-drum-outer.spinning .roulette-item { filter:blur(2px); color:rgba(255,255,255,.15); }
+    .roulette-drum-outer.spinning .roulette-item.center { filter:blur(3px); color:rgba(255,255,255,.2); }
+    .roulette-btn-row { display:flex; gap:.6rem; margin-top:.6rem; }
+    .btn-spin {
+      flex:1; padding:.78rem; border:none; border-radius:12px;
+      background:linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 100%);
+      color:#07070f; font-family:inherit; font-size:.92rem; font-weight:700;
+      cursor:pointer; transition:all .2s; position:relative; overflow:hidden;
+      box-shadow:0 4px 16px rgba(212,160,23,.25);
+    }
+    .btn-spin:hover:not(:disabled) { transform:translateY(-2px); box-shadow:0 8px 24px rgba(212,160,23,.4); }
+    .btn-spin:active:not(:disabled) { transform:translateY(0); }
+    .btn-spin:disabled { opacity:.35; cursor:not-allowed; transform:none; box-shadow:none; }
+    .btn-spin-manual {
+      padding:.78rem 1rem; border-radius:12px; background:transparent;
+      border:1.5px solid var(--border); color:var(--text-muted);
+      font-family:inherit; font-size:.82rem; font-weight:600; cursor:pointer; transition:all .2s;
+    }
+    .btn-spin-manual:hover { border-color:var(--gold); color:var(--gold); }
+    .roulette-result {
+      text-align:center; margin-top:.5rem; font-size:.75rem;
+      color:var(--text-muted); min-height:1.4em; transition:all .4s;
+      letter-spacing:.02em;
+    }
+    .roulette-result.landed { color:var(--text); }
+    .roulette-result strong { color:var(--gold); font-size:.85rem; }
+
+    /* ── CARD ── */
     .screen-inner { width:100%; max-width:440px; display:flex; flex-direction:column; align-items:center; }
-
-    /* Container com perspectiva */
-    .card-flip-wrap {
-      width:200px; height:280px; perspective:900px; margin:.75rem 0; cursor:pointer;
-    }
-    .card-flip-inner {
-      width:100%; height:100%; position:relative;
-      transform-style:preserve-3d; transition:transform .7s cubic-bezier(.4,0,.2,1);
-    }
-    .card-flip-wrap:hover .card-flip-inner,
-    .card-flip-wrap.flipped .card-flip-inner {
-      transform:rotateY(180deg);
-    }
-
-    /* Face comum */
-    .card-face {
-      position:absolute; inset:0; border-radius:18px;
-      backface-visibility:hidden; -webkit-backface-visibility:hidden;
-    }
-
-    /* Verso (frente inicial — sem o número) */
-    .card-back {
-      background: linear-gradient(135deg, #1a1430 0%, #0d0d1a 100%);
-      border:3px solid var(--card-border);
-      box-shadow:0 24px 64px rgba(0,0,0,.55);
-      display:flex; align-items:center; justify-content:center; flex-direction:column; gap:.5rem;
-      overflow:hidden;
-    }
-    .card-back::before {
-      content:'';
-      position:absolute; inset:10px; border-radius:12px;
-      border:1px solid rgba(212,160,23,.2);
-    }
-    .card-back-pattern {
-      display:grid; grid-template-columns:repeat(5,1fr); gap:8px;
-      padding:2rem; opacity:.12; position:absolute; inset:0; align-content:center;
-    }
-    .card-back-pattern span {
-      width:18px; height:18px; border-radius:50%;
-      background:var(--gold); display:block;
-    }
-    .card-back-logo {
-      font-family:'Playfair Display',serif; font-size:2.8rem; font-weight:900;
-      color:var(--gold); letter-spacing:-2px; position:relative; z-index:1;
-      text-shadow:0 0 30px rgba(212,160,23,.4);
-    }
-    .card-back-hint {
-      font-size:.6rem; letter-spacing:.2em; text-transform:uppercase;
-      color:rgba(212,160,23,.5); position:relative; z-index:1;
-    }
-
-    /* Frente (número — revelado ao hover) */
-    .card-front {
-      background:var(--card-bg);
-      border:3px solid var(--card-border);
-      box-shadow:0 24px 64px rgba(0,0,0,.55), 0 2px 0 rgba(255,255,255,.12) inset;
-      transform:rotateY(180deg);
-      display:flex; align-items:center; justify-content:center;
-    }
+    .card-flip-wrap { width:200px; height:280px; perspective:900px; margin:.75rem 0; cursor:pointer; }
+    .card-flip-inner { width:100%; height:100%; position:relative; transform-style:preserve-3d; transition:transform .7s cubic-bezier(.4,0,.2,1); }
+    .card-flip-wrap:hover .card-flip-inner, .card-flip-wrap.flipped .card-flip-inner { transform:rotateY(180deg); }
+    .card-face { position:absolute; inset:0; border-radius:18px; backface-visibility:hidden; -webkit-backface-visibility:hidden; }
+    .card-back { background:linear-gradient(135deg,#1a1430 0%,#0d0d1a 100%); border:3px solid var(--card-border); box-shadow:0 24px 64px rgba(0,0,0,.55); display:flex; align-items:center; justify-content:center; flex-direction:column; gap:.5rem; overflow:hidden; }
+    .card-back::before { content:''; position:absolute; inset:10px; border-radius:12px; border:1px solid rgba(212,160,23,.2); }
+    .card-back-pattern { display:grid; grid-template-columns:repeat(5,1fr); gap:8px; padding:2rem; opacity:.12; position:absolute; inset:0; align-content:center; }
+    .card-back-pattern span { width:18px; height:18px; border-radius:50%; background:var(--gold); display:block; }
+    .card-back-logo { font-family:'Playfair Display',serif; font-size:2.8rem; font-weight:900; color:var(--gold); letter-spacing:-2px; position:relative; z-index:1; text-shadow:0 0 30px rgba(212,160,23,.4); }
+    .card-back-hint { font-size:.6rem; letter-spacing:.2em; text-transform:uppercase; color:rgba(212,160,23,.5); position:relative; z-index:1; }
+    .card-front { background:var(--card-bg); border:3px solid var(--card-border); box-shadow:0 24px 64px rgba(0,0,0,.55),0 2px 0 rgba(255,255,255,.12) inset; transform:rotateY(180deg); display:flex; align-items:center; justify-content:center; }
     .card-corner { position:absolute; font-family:'Playfair Display',serif; font-size:1.25rem; font-weight:700; color:#5a3e20; }
     .card-corner.tl { top:12px; left:14px; }
     .card-corner.br { bottom:12px; right:14px; transform:rotate(180deg); }
@@ -198,7 +221,6 @@
     .card-suit.tl2 { top:28px; left:16px; }
     .card-suit.br2 { bottom:28px; right:16px; transform:rotate(180deg); }
     .card-number { font-family:'Playfair Display',serif; font-size:5.5rem; font-weight:900; color:#2a1a0a; line-height:1; }
-
     .theme-panel { background:var(--surface); border:1px solid rgba(212,160,23,.2); border-radius:16px; padding:1.1rem 1.4rem; text-align:center; width:100%; margin:.75rem 0; }
     .theme-group-badge { display:inline-block; font-size:.62rem; letter-spacing:.12em; text-transform:uppercase; color:var(--text-muted); background:rgba(255,255,255,.04); border:1px solid var(--border); border-radius:5px; padding:.15rem .5rem; margin-bottom:.5rem; }
     .theme-name { font-family:'Playfair Display',serif; font-size:1.25rem; font-weight:700; color:var(--gold); margin-bottom:.6rem; line-height:1.3; }
@@ -208,9 +230,75 @@
     .scale-max { background:rgba(39,174,96,.15); color:#27ae60; border:1px solid rgba(39,174,96,.25); }
     .scale-arrow { flex:1; height:2px; background:linear-gradient(to right,rgba(231,76,60,.5),rgba(39,174,96,.5)); border-radius:2px; position:relative; min-width:20px; }
     .scale-arrow::after { content:'▶'; position:absolute; right:-5px; top:-5px; font-size:.55rem; color:rgba(39,174,96,.7); }
-    .hint-box { background:rgba(74,143,255,.07); border:1px solid rgba(74,143,255,.2); border-radius:12px; padding:.75rem 1rem; width:100%; margin:.5rem 0 .75rem; font-size:.78rem; color:var(--text-muted); text-align:center; line-height:1.5; }
-    .hint-box strong { color:var(--blue); }
     .full-w { width:100%; }
+
+    /* ── HINTS ── */
+    /* ── TIMER ── */
+    .timer-bar-wrap {
+      width:100%; margin:.5rem 0; position:relative;
+    }
+    .timer-top {
+      display:flex; justify-content:space-between; align-items:center;
+      margin-bottom:.35rem;
+    }
+    .timer-label { font-size:.65rem; letter-spacing:.15em; text-transform:uppercase; color:var(--text-muted); }
+    .timer-count {
+      font-family:'Playfair Display',serif; font-size:1.2rem; font-weight:700;
+      color:var(--gold); transition:color .3s; min-width:48px; text-align:right;
+    }
+    .timer-count.warning { color:#f59e0b; }
+    .timer-count.danger  { color:var(--wrong); animation:pulseDot .6s ease-in-out infinite; }
+    .timer-track {
+      height:6px; background:var(--surface2); border-radius:99px; overflow:hidden;
+    }
+    .timer-fill {
+      height:100%; border-radius:99px; transition:width .9s linear, background .3s;
+      background:var(--gold);
+    }
+    .timer-fill.warning { background:#f59e0b; }
+    .timer-fill.danger  { background:var(--wrong); }
+    .timer-expired {
+      font-size:.75rem; color:var(--wrong); text-align:center;
+      padding:.5rem; background:rgba(231,76,60,.08);
+      border:1px solid rgba(231,76,60,.2); border-radius:10px;
+      margin-top:.4rem;
+    }
+
+    .hints-panel { width:100%; margin:.6rem 0; display:flex; flex-direction:column; gap:.4rem; }
+    .hint-row { background:var(--surface); border:1px solid var(--border); border-radius:11px; padding:.6rem .9rem; display:flex; align-items:flex-start; gap:.7rem; transition:border-color .3s; }
+    .hint-row.mine { border-color:rgba(74,143,255,.3); background:rgba(74,143,255,.05); }
+    .hint-row.has-hint { border-color:rgba(212,160,23,.2); }
+    .hint-body { flex:1; min-width:0; }
+    .hint-player-name { font-size:.65rem; font-weight:600; color:var(--text-muted); margin-bottom:.2rem; }
+    .hint-row.mine .hint-player-name { color:var(--blue); }
+    .hint-text { font-size:.82rem; color:var(--text); line-height:1.4; font-style:italic; }
+    .hint-text.empty { color:var(--text-muted); font-style:normal; font-size:.75rem; }
+    .hint-input-wrap { width:100%; margin:.5rem 0 .9rem; }
+    .hint-input-wrap textarea { width:100%; background:var(--surface2); border:1.5px solid var(--border); border-radius:11px; color:var(--text); font-family:inherit; font-size:.9rem; padding:.75rem 1rem; outline:none; resize:none; transition:border-color .2s; line-height:1.5; }
+    .hint-input-wrap textarea:focus { border-color:var(--gold); }
+    .hint-input-wrap textarea::placeholder { color:var(--text-muted); }
+    .hint-input-wrap textarea:disabled { opacity:.5; cursor:not-allowed; }
+    .hint-input-footer { display:flex; justify-content:space-between; align-items:center; margin-top:.3rem; }
+    .hint-char { font-size:.65rem; color:var(--text-muted); }
+    .hint-status { font-size:.65rem; font-weight:600; }
+    .hint-status.sent    { color:var(--correct); }
+    .hint-status.editing { color:var(--gold); }
+    .btn-confirm-hint {
+      width:100%; margin-top:.5rem; padding:.65rem 1rem;
+      background:var(--surface2); border:1.5px solid var(--border);
+      border-radius:11px; color:var(--text-muted); font-family:inherit;
+      font-size:.85rem; font-weight:600; cursor:pointer; transition:all .2s;
+    }
+    .btn-confirm-hint:not(:disabled):hover {
+      border-color:var(--correct); color:var(--correct);
+      background:rgba(39,174,96,.08);
+    }
+    .btn-confirm-hint:disabled { opacity:.35; cursor:not-allowed; }
+    .btn-confirm-hint.confirmed {
+      border-color:var(--correct); color:var(--correct);
+      background:rgba(39,174,96,.08);
+    }
+    .hints-title { font-size:.65rem; letter-spacing:.2em; text-transform:uppercase; color:var(--text-muted); margin-bottom:.4rem; }
 
     /* ── ORDERING ── */
     .ordering-wrap { width:100%; max-width:460px; }
@@ -235,29 +323,33 @@
     .ord-card.dragging { opacity:.3; border-style:dashed; border-color:var(--gold); }
     .ord-card.drag-over { border-color:var(--gold); background:rgba(212,160,23,.08); transform:scale(1.025); }
     .ord-card.is-me { border-color:var(--blue); background:rgba(74,143,255,.07); }
-    .ord-avatar { width:36px; height:36px; border-radius:9px; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:.85rem; flex-shrink:0; background:var(--surface2); color:var(--text-muted); }
-    .ord-card.is-me .ord-avatar { background:var(--blue); color:#fff; }
+    .ord-card.readonly { cursor:default; }
+    .ord-card.readonly .ord-handle { display:none; }
     .ord-info { flex:1; }
     .ord-name { font-weight:600; font-size:.9rem; }
     .ord-you { font-size:.65rem; color:var(--blue); font-weight:500; margin-top:1px; }
     .ord-handle { color:var(--text-muted); font-size:1.2rem; cursor:grab; padding:0 2px; }
     .ord-pos { font-size:.65rem; color:var(--text-muted); font-weight:600; min-width:20px; text-align:center; }
+    .ord-indicator { font-size:.58rem; font-weight:700; letter-spacing:.12em; text-transform:uppercase; padding:.18rem .5rem; border-radius:5px; flex-shrink:0; }
+    .ord-indicator.top { background:rgba(39,174,96,.15); color:#27ae60; border:1px solid rgba(39,174,96,.3); }
+    .ord-indicator.bottom { background:rgba(231,76,60,.15); color:#e74c3c; border:1px solid rgba(231,76,60,.3); }
+    .guest-ordering-note { font-size:.78rem; color:var(--text-muted); text-align:center; padding:.6rem; background:rgba(255,255,255,.02); border:1px solid var(--border); border-radius:10px; margin:.5rem 0; }
 
     /* ── RESULTS ── */
     .results-wrap { width:100%; max-width:460px; }
     .results-title { font-family:'Playfair Display',serif; font-size:2rem; font-weight:700; text-align:center; }
     .score-block { text-align:center; margin:.75rem 0 1.25rem; }
-    .score-big { font-family:'Playfair Display',serif; font-size:4rem; font-weight:900; color:var(--gold); line-height:1; text-shadow:0 0 40px rgba(212,160,23,.3); }
+    .score-big { font-family:'Playfair Display',serif; font-size:4rem; font-weight:900; color:var(--gold); line-height:1; text-shadow:0 0 40px rgba(212,160,23,.3); animation:countUp .6s cubic-bezier(.34,1.56,.64,1); }
     .score-lbl { font-size:.68rem; letter-spacing:.2em; text-transform:uppercase; color:var(--text-muted); }
     .section-tag { font-size:.65rem; letter-spacing:.2em; text-transform:uppercase; color:var(--text-muted); margin:1rem 0 .6rem; }
-    .res-card { background:var(--surface); border:1px solid var(--border); border-radius:13px; padding:.85rem 1.1rem; display:flex; align-items:center; gap:.9rem; margin-bottom:.45rem; }
+    .res-card { background:var(--surface); border:1px solid var(--border); border-radius:13px; padding:.85rem 1.1rem; display:flex; align-items:center; gap:.9rem; margin-bottom:.45rem; opacity:0; animation:slideIn .4s ease forwards; }
     .res-card.correct { border-color:var(--correct); background:rgba(39,174,96,.07); }
     .res-card.wrong   { border-color:var(--wrong);   background:rgba(231,76,60,.07); }
     .res-pos { width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:.78rem; font-weight:700; flex-shrink:0; }
     .correct .res-pos { background:var(--correct); color:#fff; }
     .wrong   .res-pos { background:var(--wrong);   color:#fff; }
     .res-info { flex:1; }
-    .res-player { font-weight:600; font-size:.9rem; }
+    .res-player { font-weight:600; font-size:.9rem; display:flex; align-items:center; gap:.35rem; flex-wrap:wrap; }
     .res-num { font-size:.75rem; color:var(--text-muted); margin-top:1px; }
     .res-icon { font-size:1.1rem; }
     .compare-note { font-size:.78rem; color:var(--text-muted); text-align:center; font-style:italic; margin:1rem 0; padding:.7rem; background:rgba(255,255,255,.02); border-radius:10px; border:1px solid var(--border); }
@@ -279,54 +371,6 @@
     .info-box strong { color:var(--gold); }
     .warn-box { background:rgba(231,76,60,.07); border:1px solid rgba(231,76,60,.2); border-radius:10px; padding:.7rem 1rem; margin:.75rem 0; font-size:.8rem; color:#e57060; line-height:1.5; }
 
-    /* ── HINTS PANEL ── */
-    .hints-panel { width:100%; margin:.6rem 0; display:flex; flex-direction:column; gap:.4rem; }
-    .hint-row {
-      background:var(--surface); border:1px solid var(--border);
-      border-radius:11px; padding:.6rem .9rem;
-      display:flex; align-items:flex-start; gap:.7rem;
-    }
-    .hint-row.mine { border-color:rgba(74,143,255,.3); background:rgba(74,143,255,.05); }
-    .hint-row.has-hint { border-color:rgba(212,160,23,.2); }
-    .hint-avatar { width:28px; height:28px; border-radius:7px; background:var(--surface2); display:flex; align-items:center; justify-content:center; font-size:.75rem; font-weight:700; flex-shrink:0; color:var(--text-muted); }
-    .hint-row.mine .hint-avatar { background:rgba(74,143,255,.2); color:var(--blue); }
-    .hint-body { flex:1; min-width:0; }
-    .hint-player-name { font-size:.65rem; font-weight:600; color:var(--text-muted); margin-bottom:.2rem; }
-    .hint-row.mine .hint-player-name { color:var(--blue); }
-    .hint-text { font-size:.82rem; color:var(--text); line-height:1.4; font-style:italic; }
-    .hint-text.empty { color:var(--text-muted); font-style:normal; font-size:.75rem; }
-    .hint-input-wrap { width:100%; margin:.5rem 0 .9rem; }
-    .hint-input-wrap textarea {
-      width:100%; background:var(--surface2); border:1.5px solid var(--border);
-      border-radius:11px; color:var(--text); font-family:inherit; font-size:.9rem;
-      padding:.75rem 1rem; outline:none; resize:none; transition:border-color .2s; line-height:1.5;
-    }
-    .hint-input-wrap textarea:focus { border-color:var(--gold); }
-    .hint-input-wrap textarea::placeholder { color:var(--text-muted); }
-    .hint-char { font-size:.65rem; color:var(--text-muted); text-align:right; margin-top:.25rem; }
-    .hints-title { font-size:.65rem; letter-spacing:.2em; text-transform:uppercase; color:var(--text-muted); margin-bottom:.4rem; }
-
-    /* ── ORDERING HOST/GUEST ── */
-    .ord-card.readonly { cursor:default; }
-    .ord-card.readonly .ord-handle { opacity:.2; cursor:default; }
-    .guest-ordering-note { font-size:.78rem; color:var(--text-muted); text-align:center; padding:.6rem; background:rgba(255,255,255,.02); border:1px solid var(--border); border-radius:10px; margin:.5rem 0; }
-    .ord-indicator {
-      font-size:.58rem; font-weight:700; letter-spacing:.12em; text-transform:uppercase;
-      padding:.18rem .5rem; border-radius:5px; flex-shrink:0;
-    }
-    .ord-indicator.top { background:rgba(39,174,96,.15); color:#27ae60; border:1px solid rgba(39,174,96,.3); }
-    .ord-indicator.bottom { background:rgba(231,76,60,.15); color:#e74c3c; border:1px solid rgba(231,76,60,.3); }
-
-    /* ── HOME BUTTONS ── */
-    .home-btns { display:flex; flex-direction:column; gap:.75rem; }
-    .btn-join {
-      width:100%; padding:.9rem; border-radius:13px; font-family:inherit;
-      font-size:.95rem; font-weight:600; cursor:pointer; transition:all .2s;
-      background:transparent; color:var(--text); border:1.5px solid rgba(212,160,23,.35);
-    }
-    .btn-join:hover { border-color:var(--gold); background:rgba(212,160,23,.07); transform:translateY(-2px); }
-    .btn-join:active { transform:translateY(0); }
-
     /* ── TOAST ── */
     #toast { position:fixed; bottom:1.5rem; left:50%; transform:translateX(-50%) translateY(80px); background:rgba(30,30,50,.95); border:1px solid rgba(255,255,255,.1); border-radius:12px; padding:.65rem 1.2rem; font-size:.8rem; color:var(--text); white-space:nowrap; z-index:200; transition:transform .3s ease; pointer-events:none; backdrop-filter:blur(10px); }
     #toast.show { transform:translateX(-50%) translateY(0); }
@@ -334,7 +378,7 @@
 </head>
 <body>
 
-<!-- ══════════ SCREEN 1 — HOME ══════════ -->
+<!-- ══ HOME ══ -->
 <div id="screen-home" class="screen active">
   <div class="logo">ito</div>
   <div class="logo-sub">Modo Competitivo</div>
@@ -347,7 +391,7 @@
   </div>
 </div>
 
-<!-- ══════════ SCREEN 1B — CRIAR SALA ══════════ -->
+<!-- ══ CRIAR SALA ══ -->
 <div id="screen-create" class="screen">
   <div class="logo" style="font-size:3rem;margin-bottom:.25rem">ito</div>
   <div class="logo-sub" style="margin-bottom:1.5rem">Criar Sala</div>
@@ -359,13 +403,13 @@
     <button class="btn btn-primary" onclick="createRoom()">Criar Sala →</button>
     <button class="btn btn-secondary" onclick="showScreen('screen-home')">← Voltar</button>
     <div class="seed-note" style="margin-top:1rem">
-      👥 Os jogadores entram na sala pelo código.<br>
-      Quando todos estiverem prontos, inicie a partida!
+      👥 Os jogadores entram pelo código.<br>
+      Você inicia a partida quando todos estiverem prontos!
     </div>
   </div>
 </div>
 
-<!-- ══════════ SCREEN 1C — ENTRAR NA SALA ══════════ -->
+<!-- ══ ENTRAR NA SALA ══ -->
 <div id="screen-join" class="screen">
   <div class="logo" style="font-size:3rem;margin-bottom:.25rem">ito</div>
   <div class="logo-sub" style="margin-bottom:1.5rem">Entrar na Sala</div>
@@ -376,70 +420,71 @@
     </div>
     <div class="field">
       <label>Código da Sala</label>
-      <div class="code-row">
-        <input type="text" id="join-code" placeholder="Ex: FESTA24" maxlength="12" oninput="this.value=this.value.toUpperCase()">
-      </div>
+      <input type="text" id="join-code" placeholder="Ex: FESTA24" maxlength="12" oninput="this.value=this.value.toUpperCase()">
     </div>
     <button class="btn btn-primary" onclick="joinRoom()">Entrar na Sala →</button>
     <button class="btn btn-secondary" onclick="showScreen('screen-home')">← Voltar</button>
   </div>
 </div>
 
-<!-- ══════════ SCREEN 2 — LOBBY ══════════ -->
+<!-- ══ LOBBY ══ -->
 <div id="screen-lobby" class="screen">
   <div class="lobby-wrap">
     <div class="lobby-header">
       <div class="lobby-title">Sala de Espera</div>
       <div class="lobby-subtitle" id="lobby-subtitle">Aguardando jogadores...</div>
     </div>
-
     <div class="lobby-code-box" onclick="copyCode()">
       <div class="lobby-code-lbl">Código da sala — toque para copiar</div>
       <div class="lobby-code-val" id="lobby-code-val">——</div>
       <div class="lobby-code-hint">Compartilhe com os outros jogadores</div>
     </div>
-
     <div class="lobby-players-grid" id="lobby-players-grid"></div>
-
-    <div class="lobby-status-bar" id="lobby-status-bar">
+    <div class="lobby-status-bar">
       <div class="pulse-dot" id="lobby-pulse"></div>
       <span id="lobby-status-msg">Conectando...</span>
     </div>
-
     <div id="host-controls" style="display:none">
-      <button class="btn btn-primary" id="start-btn" onclick="hostStartGame()" disabled>
-        Iniciar Partida →
-      </button>
+      <button class="btn btn-primary" id="start-btn" onclick="hostStartGame()" disabled>Aguardando jogadores...</button>
     </div>
     <div id="guest-controls" style="display:none">
-      <div class="waiting-msg">
-        <div class="pulse-dot"></div>
-        Aguardando Jogador 1 iniciar a partida...
-      </div>
+      <div class="waiting-msg"><div class="pulse-dot"></div> Aguardando Jogador 1 iniciar a partida...</div>
     </div>
-
     <button class="btn btn-danger" onclick="leaveRoom()">← Sair da sala</button>
   </div>
 </div>
 
-<!-- ══════════ SCREEN 3 — THEME PICKER ══════════ -->
+<!-- ══ THEME PICKER ══ -->
 <div id="screen-theme-pick" class="screen">
   <div class="theme-picker-wrap">
     <div class="tp-header">
       <div class="tp-title">Escolha o Tema</div>
-      <div class="tp-sub" id="tp-sub">Decidam juntos qual tema usar nesta rodada</div>
+      <div class="tp-sub" id="tp-sub">Decidam juntos qual tema usar</div>
     </div>
 
-    <!-- Seletor de grupo: só aparece para o host -->
-    <div id="tp-group-selector" style="display:none; margin-bottom:1rem;">
-      <div class="hints-title" style="margin-bottom:.5rem">Grupo de temas</div>
-      <select id="tp-group-select" onchange="onGroupChange(this.value)"
-        style="background:var(--surface2);border:1.5px solid rgba(212,160,23,.35);border-radius:11px;color:var(--text);font-family:inherit;font-size:.88rem;padding:.7rem 1rem;width:100%;outline:none;">
-      </select>
+    <!-- ROLETA — só visível para o host -->
+    <div id="tp-roulette-area" style="display:none">
+      <div class="roulette-wrap">
+        <div class="roulette-drum-outer">
+          <div class="roulette-window"></div>
+          <div class="roulette-drum" id="roulette-drum"></div>
+        </div>
+        <div class="roulette-result" id="roulette-result">Gire para sortear um grupo!</div>
+        <div class="roulette-btn-row">
+          <button class="btn-spin" id="btn-spin" onclick="spinRoulette()">🎰 Girar Roleta</button>
+          <button class="btn-spin-manual" onclick="toggleManualSelect()">Manual</button>
+        </div>
+      </div>
+
+      <!-- Seletor manual (oculto por padrão) -->
+      <div id="tp-group-selector" style="display:none;margin-bottom:.75rem">
+        <select id="tp-group-select" onchange="onGroupChange(this.value)"
+          style="background:var(--surface2);border:1.5px solid rgba(212,160,23,.35);border-radius:11px;color:var(--text);font-family:inherit;font-size:.88rem;padding:.7rem 1rem;width:100%;outline:none;"></select>
+      </div>
     </div>
 
-    <!-- Badge visível para guests mostrando o grupo selecionado -->
-    <div id="tp-group-badge-wrap" style="display:flex;justify-content:center;margin-bottom:1rem;">
+    <!-- Badge visível para guests -->
+    <div id="tp-group-badge-wrap" style="display:flex;justify-content:center;margin-bottom:1rem">
       <div class="tp-group-badge"><div class="dot"></div><span id="tp-group-label">Grupo —</span></div>
     </div>
 
@@ -457,21 +502,17 @@
   </div>
 </div>
 
-<!-- ══════════ SCREEN 4 — CARD REVEAL ══════════ -->
+<!-- ══ CARD REVEAL ══ -->
 <div id="screen-card" class="screen">
   <div class="screen-inner">
     <div class="label-tag">Passe o mouse para revelar seu número</div>
     <div class="card-flip-wrap" onclick="this.classList.toggle('flipped')">
       <div class="card-flip-inner">
-        <!-- Verso (inicial) -->
         <div class="card-face card-back">
-          <div class="card-back-pattern">
-            <script>document.write(Array(25).fill('<span></span>').join(''))</script>
-          </div>
+          <div class="card-back-pattern" id="card-back-pattern"></div>
           <div class="card-back-logo">ito</div>
           <div class="card-back-hint">toque para revelar</div>
         </div>
-        <!-- Frente (número) -->
         <div class="card-face card-front">
           <div class="card-corner tl" id="corner-tl">?</div>
           <div class="card-suit tl2">♦</div>
@@ -491,38 +532,51 @@
         <div class="scale-max" id="scale-max">—</div>
       </div>
     </div>
+    <div class="timer-bar-wrap" id="timer-wrap">
+      <div class="timer-top">
+        <div class="timer-label">⏱ Tempo para dar a dica</div>
+        <div class="timer-count" id="timer-count">3:00</div>
+      </div>
+      <div class="timer-track">
+        <div class="timer-fill" id="timer-fill" style="width:100%"></div>
+      </div>
+      <div class="timer-expired" id="timer-expired" style="display:none">
+        ⏰ Tempo esgotado! Aguardando o Jogador 1 avançar.
+      </div>
+    </div>
 
     <div class="hints-title">Sua dica para os outros</div>
     <div class="hint-input-wrap">
       <textarea id="my-hint-input" rows="2" maxlength="120"
         placeholder="Ex: A baleia mais forte do grupo..."
         oninput="onHintInput(this)"></textarea>
-      <div class="hint-char"><span id="hint-char-count">0</span>/120</div>
+      <div class="hint-input-footer">
+        <div class="hint-char"><span id="hint-char-count">0</span>/120</div>
+        <div id="hint-status" class="hint-status"></div>
+      </div>
+      <button class="btn-confirm-hint" id="confirm-hint-btn" onclick="confirmHint()" disabled>
+        Confirmar Dica ✓
+      </button>
     </div>
-
     <div class="hints-title">Dicas de todos</div>
     <div class="hints-panel" id="card-hints-panel"></div>
-
     <div class="full-w" style="margin-top:.75rem">
       <div id="card-host-controls" style="display:none">
         <button class="btn btn-primary" onclick="goToOrdering()">Todos deram dicas → Ordenar</button>
       </div>
       <div id="card-guest-controls" style="display:none">
-        <div class="waiting-msg">
-          <div class="pulse-dot"></div>
-          Aguardando <strong style="margin-left:.2rem">Jogador 1</strong> avançar para a ordenação...
-        </div>
+        <div class="waiting-msg"><div class="pulse-dot"></div> Aguardando <strong style="margin-left:.2rem">Jogador 1</strong> avançar...</div>
       </div>
     </div>
   </div>
 </div>
 
-<!-- ══════════ SCREEN 5 — ORDERING ══════════ -->
+<!-- ══ ORDERING ══ -->
 <div id="screen-ordering" class="screen">
   <div class="ordering-wrap">
     <div class="ordering-head">
       <div class="ordering-title">Ordenar Jogadores</div>
-      <div class="ordering-sub" id="ord-sub">Arraste do menor ao maior número</div>
+      <div class="ordering-sub" id="ord-sub">Arraste do maior ao menor</div>
     </div>
     <div class="ordering-theme-mini">
       <div class="tn" id="ord-theme-name">—</div>
@@ -532,22 +586,19 @@
         <div class="sm-max" id="ord-scale-max">—</div>
       </div>
     </div>
-
     <div class="hints-title">Dicas dos jogadores</div>
     <div class="hints-panel" id="ord-hints-panel"></div>
-
     <div class="scale-bar" style="margin-top:.75rem">
-      <div class="scale-bar-max" id="sb-min">⬆ maior</div>
+      <div class="scale-bar-max">⬆ maior</div>
       <div class="scale-bar-line"></div>
-      <div class="scale-bar-min" id="sb-max">menor ⬇</div>
+      <div class="scale-bar-min">menor ⬇</div>
     </div>
     <div class="cards-list" id="cards-list"></div>
     <div class="scale-bar" style="margin-top:.3rem">
-      <div class="scale-bar-max" id="sb-min2">⬆ maior</div>
+      <div class="scale-bar-max">⬆ maior</div>
       <div class="scale-bar-line"></div>
-      <div class="scale-bar-min" id="sb-max2">menor ⬇</div>
+      <div class="scale-bar-min">menor ⬇</div>
     </div>
-
     <div id="ord-host-controls" style="margin-top:1.25rem">
       <button class="btn btn-primary" onclick="confirmOrdering()">Confirmar Ordem ✓</button>
       <button class="btn btn-secondary" onclick="showScreen('screen-card')">← Voltar</button>
@@ -561,7 +612,7 @@
   </div>
 </div>
 
-<!-- ══════════ SCREEN 6 — RESULTS ══════════ -->
+<!-- ══ RESULTS ══ -->
 <div id="screen-results" class="screen">
   <div class="results-wrap">
     <div class="results-title" id="results-title">Resultado!</div>
@@ -573,7 +624,7 @@
       <div class="result-theme-lbl">Tema da rodada</div>
       <div class="result-theme-name" id="result-theme-name">—</div>
     </div>
-    <div class="section-tag">Ordem correta (do menor ao maior)</div>
+    <div class="section-tag">Ordem correta (maior → menor)</div>
     <div id="correct-order-list"></div>
     <p class="compare-note">📊 Compare com os amigos para ver quem acertou mais posições!</p>
     <button class="btn btn-primary" id="new-round-btn" onclick="newRound()">🔄 Nova Rodada</button>
@@ -581,37 +632,36 @@
   </div>
 </div>
 
-<!-- ══════════ MODAL — HOW TO PLAY ══════════ -->
+<!-- ══ MODAL ══ -->
 <div id="modal-how" class="modal-overlay" onclick="if(event.target===this)this.classList.remove('open')">
   <div class="modal">
     <h2>🃏 Como Jogar</h2>
-    <div class="info-box"><strong>Adaptação competitiva:</strong> cada jogador tenta adivinhar a ordem dos números sozinho. Quem acertar mais posições vence!</div>
-    <div class="rule-step"><div class="rule-num">1</div><div class="rule-text"><strong>Todos entram com o mesmo código.</strong> <em>Jogador 1</em> cria a sala e inicia a partida. Outros entram escolhendo seu número (Jogador 2, 3...).</div></div>
-    <div class="rule-step"><div class="rule-num">2</div><div class="rule-text">O app sorteia um <strong>grupo de 5 temas</strong>. O Jogador 1 escolhe qual usar — todos veem a escolha em tempo real.</div></div>
-    <div class="rule-step"><div class="rule-num">3</div><div class="rule-text">Cada um vê seu <strong>número secreto</strong> (1–100) e o tema. Dê uma dica usando o tema sem revelar o número. Ex: tema <em>"Tamanho de Animais"</em> + número 80 → <em>"A baleia mais forte do grupo"</em></div></div>
-    <div class="rule-step"><div class="rule-num">4</div><div class="rule-text">Arraste os jogadores do <strong>menor ao maior</strong> número conforme as dicas. Confirme e veja o resultado!</div></div>
+    <div class="info-box"><strong>Adaptação competitiva:</strong> cada jogador tenta adivinhar a ordem dos números. O host organiza baseado nas dicas de todos!</div>
+    <div class="rule-step"><div class="rule-num">1</div><div class="rule-text"><strong>Crie ou entre em uma sala</strong> com o mesmo código. Escolha seu avatar e nome.</div></div>
+    <div class="rule-step"><div class="rule-num">2</div><div class="rule-text">O <em>Jogador 1 (Host)</em> escolhe o grupo de temas e confirma qual usar.</div></div>
+    <div class="rule-step"><div class="rule-num">3</div><div class="rule-text">Cada um vê seu número secreto. <strong>Digite sua dica</strong> usando o tema sem revelar o número!</div></div>
+    <div class="rule-step"><div class="rule-num">4</div><div class="rule-text">O host arrasta os jogadores do <strong>maior ao menor</strong> número. Todos veem em tempo real.</div></div>
+    <div class="rule-step"><div class="rule-num">5</div><div class="rule-text">O resultado é revelado para todos ao mesmo tempo com os números reais!</div></div>
     <div class="warn-box">🚫 Não cite números, valores, porcentagens ou quantidades na dica!</div>
     <button class="btn btn-primary" onclick="document.getElementById('modal-how').classList.remove('open')" style="margin-top:.25rem">Entendi!</button>
   </div>
 </div>
 
-<!-- ══════════ TOAST ══════════ -->
 <div id="toast">Copiado!</div>
 
 <script>
 // ══════════════════════════════════
-// FIREBASE INIT
+// FIREBASE
 // ══════════════════════════════════
-const firebaseConfig = {
-  apiKey: "AIzaSyC8A2E829-0TfMRBnrOdI3tkU_jFiyS2yw",
-  authDomain: "ito-cooperativo.firebaseapp.com",
-  databaseURL: "https://ito-cooperativo-default-rtdb.firebaseio.com",
-  projectId: "ito-cooperativo",
-  storageBucket: "ito-cooperativo.firebasestorage.app",
-  messagingSenderId: "455040516136",
-  appId: "1:455040516136:web:c5f35dbdfcb5bac6a1351d"
-};
-firebase.initializeApp(firebaseConfig);
+firebase.initializeApp({
+  apiKey:"AIzaSyC8A2E829-0TfMRBnrOdI3tkU_jFiyS2yw",
+  authDomain:"ito-cooperativo.firebaseapp.com",
+  databaseURL:"https://ito-cooperativo-default-rtdb.firebaseio.com",
+  projectId:"ito-cooperativo",
+  storageBucket:"ito-cooperativo.firebasestorage.app",
+  messagingSenderId:"455040516136",
+  appId:"1:455040516136:web:c5f35dbdfcb5bac6a1351d"
+});
 const db = firebase.database();
 let roomListener = null;
 
@@ -633,117 +683,226 @@ function hashCode(str) {
 }
 
 // ══════════════════════════════════
-// 100 TEMAS OFICIAIS
+// 200 TEMAS OFICIAIS + NOVOS
 // ══════════════════════════════════
 const THEMES = [
-  { name:"Mangá / anime famoso", min:"desconhecido", max:"famoso" },
-  { name:"Pessoas famosas que você gostaria de ser", min:"não gostaria de ser", max:"gostaria de ser" },
-  { name:"Coisas que te dão medo", min:"nem um sustinho", max:"morreria de medo" },
-  { name:"Coisas que você gostaria de fotografar", min:"não vale o clique", max:"faria um book" },
-  { name:"Coisas importantes na vida", min:"não é nada", max:"importantíssimo" },
-  { name:"Esportes mais conhecidos", min:"pouca gente conhece", max:"muito popular" },
-  { name:"Lugares onde você gostaria de morar", min:"não ficaria lá 5 minutos", max:"passaria lá a eternidade" },
-  { name:"Itens do dia a dia que poderiam ser boas armas", min:"nem arranha", max:"arma forte" },
-  { name:"Coisas que você ficaria olhando com admiração o dia inteiro", min:"nem pararia pra olhar", max:"ficaria olhando por horas" },
-  { name:"Habilidades importantes para ser líder", min:"não importante", max:"essencial" },
-  { name:"Contos de fadas populares", min:"desconhecido", max:"popular" },
-  { name:"Poderes especiais que você gostaria de ter", min:"não gostaria", max:"gostaria" },
-  { name:"Coisas que você não conseguiria perdoar", min:"nada demais", max:"imperdoável" },
-  { name:"Mentiras que você acreditaria", min:"não acreditaria", max:"acreditaria com certeza" },
-  { name:"Coisas que te fazem feliz", min:"não te faz feliz", max:"felicidade pura" },
-  { name:"Personagens da ficção com quem gostaria de ter um encontro", min:"não valeria um encontro", max:"provavelmente casaria" },
-  { name:"Filmes conhecidos", min:"ninguém viu", max:"todo mundo assistiu" },
-  { name:"Coisas nas quais você gostaria de ficar em imersão", min:"não, obrigado", max:"quero uma piscina cheia disso" },
-  { name:"Sabores de sorvete que poderiam ser deliciosos", min:"credo, horrível!", max:"comeria toneladas" },
-  { name:"Itens / armas para lutar contra zumbis", min:"é pra fazer cosquinha?", max:"adiós, zumbi!" },
-  { name:"Atletas famosos", min:"sei nem quem é", max:"grande campeão" },
-  { name:"Personagens da ficção que você gostaria de ser", min:"não seria", max:"seria muito" },
-  { name:"Coisas que cheiram bem", min:"cheiro normal", max:"faria um perfume disso" },
-  { name:"Coisas que gostaria de fazer quando se aposentar", min:"não faria", max:"faria com toda certeza" },
-  { name:"Coisas importantes para fazer sucesso nas mídias sociais", min:"pouco importante", max:"obrigatório" },
-  { name:"Comidas famosas", min:"pouca gente conhece", max:"encontradas em todo o mundo" },
-  { name:"Celebridades de filmes e séries mais conhecidas da atualidade", min:"fez poucas participações", max:"está sempre nos lançamentos" },
-  { name:"Coisas que gostaria de ter como souvenir", min:"não teria isso", max:"teria mais de mil" },
-  { name:"Coisas difíceis de suportar", min:"não tão difícil", max:"praticamente impossível" },
-  { name:"Habilidades essenciais para um comediante", min:"desnecessária", max:"obrigatória" },
-  { name:"Coisas pesadas", min:"levinho", max:"pesado" },
-  { name:"Figuras históricas populares", min:"sei nem quem é", max:"figura importante" },
-  { name:"Coisas que você desejava quando criança", min:"nem queria", max:"queria pra caramba" },
-  { name:"Coisas úteis em uma casa", min:"inútil", max:"muito útil" },
-  { name:"Coisas que fazem você se sentir amado(a)", min:"não faz", max:"é puro amor" },
-  { name:"Canções famosas", min:"ninguém conhece", max:"todo mundo canta junto" },
-  { name:"Marcas mais valiosas", min:"vale pouco", max:"vale bilhões" },
-  { name:"Coisas que quer fazer logo quando acorda", min:"não quero fazer", max:"quero muito" },
-  { name:"Sons que te fazem feliz", min:"nem é som", max:"felicidade para os ouvidos" },
-  { name:"Pense como estudante do EM: o que é legal?", min:"cringe", max:"super legal" },
-  { name:"Presentes de aniversário mais comuns", min:"ninguém ganha", max:"todo mundo já ganhou" },
-  { name:"Países populares para viajar", min:"ninguém vai", max:"todo mundo já foi" },
-  { name:"Coisas que te fazem feliz quando feitas pelo seu amor", min:"pouco feliz", max:"muito feliz" },
-  { name:"Animais nos quais você gostaria de montar", min:"não gostaria", max:"queria demais" },
-  { name:"Pense como uma criança: o que te faz feliz?", min:"não te faz muito feliz", max:"isso sim é felicidade" },
-  { name:"Vilões mais temíveis", min:"até eu encarava", max:"me faz ter pesadelos" },
-  { name:"Coisas fofinhas", min:"pouco fofinho", max:"um cuti-cuti" },
-  { name:"Atividades difíceis de serem feitas sozinho(a)", min:"dá pra fazer", max:"impossível" },
-  { name:"Habilidades úteis para o trabalho", min:"inútil", max:"muito útil" },
-  { name:"Pense como um gato: os lugares mais confortáveis do mundo", min:"pouco confortável", max:"muito confortável" },
-  { name:"Tamanho de animais", min:"pequeno", max:"enorme" },
-  { name:"Coisas leves", min:"pouco leve", max:"levíssimo" },
-  { name:"Frases estranhas se ditas por uma criança de 5 anos", min:"normal", max:"muito estranho" },
-  { name:"Algo surpreendente encontrado embaixo de uma pedra no parque", min:"algo comum", max:"algo surpreendente" },
-  { name:"Coisas confiáveis por todo o sempre", min:"pouco confiável", max:"confiável eternamente" },
-  { name:"Lugares onde você vai com frequência", min:"vai pouco", max:"vai muito" },
-  { name:"Drinques populares", min:"ninguém bebe isso", max:"todo mundo já bebeu" },
-  { name:"Pedidos de casamento que te fariam feliz", min:"aquele de passar vergonha", max:"algo memorável" },
-  { name:"Itens de baú do tesouro que gostaria de ter", min:"não gostaria", max:"queria muito" },
-  { name:"Tipos de festivais que gostaria de participar", min:"não iria nem pagando", max:"gastaria o salário pra ir" },
-  { name:"Brinquedos mais conhecidos", min:"desconhecido", max:"toda criança já teve um" },
-  { name:"Coisas que te deixam com sono", min:"acordadíssimo", max:"zzzzz…" },
-  { name:"Itens úteis quando perdido(a) no deserto", min:"não serve para nada", max:"salvaria sua vida" },
-  { name:"Momentos históricos que visitaria com máquina do tempo", min:"fuja, louco!", max:"iria agora" },
-  { name:"Pense como vilão: herói que menos gostaria de enfrentar", min:"derrotaria facilmente", max:"tenho medo até da sombra" },
-  { name:"Palavras que gostaria de ouvir", min:"praticamente uma ofensa", max:"mais que um elogio" },
-  { name:"Veículos mais comuns", min:"nunca vi", max:"tem um em cada esquina" },
-  { name:"Coisas que surpreenderiam se saíssem do seu corpo", min:"normal", max:"não dá pra imaginar isso" },
-  { name:"Alimentos que fazem bem", min:"nada saudável", max:"puro suco de saúde" },
-  { name:"Pense como cientista: o que gostaria de descobrir?", min:"não gostaria de descobrir", max:"merece um Nobel" },
-  { name:"Itens úteis para levar a uma ilha deserta", min:"inútil", max:"muito útil" },
-  { name:"Piadas mais engraçadas", min:"isso é ofensivo", max:"ri litros" },
-  { name:"Melhores nomes de golpes especiais para gritar", min:"não botou medo", max:"isso sim impõe respeito" },
-  { name:"Títulos de livros que te deixariam curioso", min:"ninguém se importa", max:"vou comprar" },
-  { name:"Pense como um cachorro: o que te faz feliz?", min:"nada AU-AUdacioso", max:"de balançar a cauda" },
-  { name:"Melhores jogos de tabuleiro já lançados", min:"aquele que flopou muito", max:"digno de um prêmio Spiel" },
-  { name:"Itens diferentões que gostaria de ter", min:"nem tanto", max:"isso é muito legal" },
-  { name:"Características de pessoas que gostaria no círculo de amizade", min:"nada interessante", max:"BFF na certa" },
-  { name:"Pense como um mago: qual seria o seu feitiço favorito?", min:"feitiço comum", max:"usaria toda hora" },
-  { name:"Coisas que surpreenderiam se ditas por um professor", min:"faz parte da aula", max:"por essa ninguém esperava" },
-  { name:"As coisas mais bonitas do mundo", min:"ok", max:"visão do paraíso" },
-  { name:"Os doces mais conhecidos", min:"nunca vi, nem comi", max:"vende em todo lugar" },
-  { name:"Amor verdadeiro ou apenas uma aventura?", min:"aventura", max:"amor verdadeiro" },
-  { name:"Pense como um herói: qual seria sua pose? (demonstre-a)", min:"lamentável", max:"épica" },
-  { name:"Mundos imaginários que gostaria de visitar", min:"não gostaria", max:"viveria lá o resto da vida" },
-  { name:"Coisas populares com crianças", min:"pouco conhecida", max:"muito famosa" },
-  { name:"Os nomes mais legais", min:"muito comum", max:"meu filho vai ter" },
-  { name:"Coisas que faz quando está de bom humor", min:"nunca faço", max:"faço muito" },
-  { name:"Pense como explorador: que lugares te deixam animado?", min:"um desânimo só", max:"bora lá, agora?" },
-  { name:"Habilidades úteis em relacionamentos", min:"inútil", max:"essencial" },
-  { name:"Personagens mais fortes da ficção", min:"fraco demais", max:"indestrutível" },
-  { name:"Lugares onde mais acontecem encontros românticos", min:"poucos encontros", max:"está acontecendo um agora" },
-  { name:"Um único prato pra comer até o fim da vida", min:"não escolheria", max:"comeria agora, inclusive" },
-  { name:"Pense como adolescente: algo ruim durante a aula", min:"nem tão ruim", max:"que vergonha!" },
-  { name:"Personagens fictícios com os piores temperamentos", min:"de boas", max:"explosivo" },
-  { name:"Coisas que ficaria feliz em encontrar no bolso ou bolsa", min:"nada feliz", max:"alegria pura" },
-  { name:"Caretas engraçadas (faça-as!)", min:"isso é ridículo", max:"muito engraçado!" },
-  { name:"Ações e atitudes que exigem coragem", min:"nada corajoso", max:"pura coragem" },
-  { name:"Se você tivesse um alter ego, o que gostaria que ele fosse?", min:"não gostaria", max:"é meu tipo" },
-  { name:"Habilidades importantes para um streamer", min:"desnecessária", max:"obrigatória" },
+  // ── TEMAS ORIGINAIS (1–100) ──
+  {name:"Mangá / anime famoso",min:"desconhecido",max:"famoso"},
+  {name:"Pessoas famosas que você gostaria de ser",min:"não gostaria de ser",max:"gostaria de ser"},
+  {name:"Coisas que te dão medo",min:"nem um sustinho",max:"morreria de medo"},
+  {name:"Coisas que você gostaria de fotografar",min:"não vale o clique",max:"faria um book"},
+  {name:"Coisas importantes na vida",min:"não é nada",max:"importantíssimo"},
+  {name:"Esportes mais conhecidos",min:"pouca gente conhece",max:"muito popular"},
+  {name:"Lugares onde você gostaria de morar",min:"não ficaria lá 5 minutos",max:"passaria lá a eternidade"},
+  {name:"Itens do dia a dia que poderiam ser boas armas",min:"nem arranha",max:"arma forte"},
+  {name:"Coisas que você ficaria olhando com admiração o dia inteiro",min:"nem pararia pra olhar",max:"ficaria olhando por horas"},
+  {name:"Habilidades importantes para ser líder",min:"não importante",max:"essencial"},
+  {name:"Contos de fadas populares",min:"desconhecido",max:"popular"},
+  {name:"Poderes especiais que você gostaria de ter",min:"não gostaria",max:"gostaria"},
+  {name:"Coisas que você não conseguiria perdoar",min:"nada demais",max:"imperdoável"},
+  {name:"Mentiras que você acreditaria",min:"não acreditaria",max:"acreditaria com certeza"},
+  {name:"Coisas que te fazem feliz",min:"não te faz feliz",max:"felicidade pura"},
+  {name:"Personagens da ficção com quem gostaria de ter um encontro",min:"não valeria um encontro",max:"provavelmente casaria"},
+  {name:"Filmes conhecidos",min:"ninguém viu",max:"todo mundo assistiu"},
+  {name:"Coisas nas quais você gostaria de ficar em imersão",min:"não, obrigado",max:"quero uma piscina cheia disso"},
+  {name:"Sabores de sorvete que poderiam ser deliciosos",min:"credo, horrível!",max:"comeria toneladas"},
+  {name:"Itens / armas para lutar contra zumbis",min:"é pra fazer cosquinha?",max:"adiós, zumbi!"},
+  {name:"Atletas famosos",min:"sei nem quem é",max:"grande campeão"},
+  {name:"Personagens da ficção que você gostaria de ser",min:"não seria",max:"seria muito"},
+  {name:"Coisas que cheiram bem",min:"cheiro normal",max:"faria um perfume disso"},
+  {name:"Coisas que gostaria de fazer quando se aposentar",min:"não faria",max:"faria com toda certeza"},
+  {name:"Coisas importantes para fazer sucesso nas mídias sociais",min:"pouco importante",max:"obrigatório"},
+  {name:"Comidas famosas",min:"pouca gente conhece",max:"encontradas em todo o mundo"},
+  {name:"Celebridades de filmes e séries mais conhecidas da atualidade",min:"fez poucas participações",max:"está sempre nos lançamentos"},
+  {name:"Coisas que gostaria de ter como souvenir",min:"não teria isso",max:"teria mais de mil"},
+  {name:"Coisas difíceis de suportar",min:"não tão difícil",max:"praticamente impossível"},
+  {name:"Habilidades essenciais para um comediante",min:"desnecessária",max:"obrigatória"},
+  {name:"Coisas pesadas",min:"levinho",max:"pesado"},
+  {name:"Figuras históricas populares",min:"sei nem quem é",max:"figura importante"},
+  {name:"Coisas que você desejava quando criança",min:"nem queria",max:"queria pra caramba"},
+  {name:"Coisas úteis em uma casa",min:"inútil",max:"muito útil"},
+  {name:"Coisas que fazem você se sentir amado(a)",min:"não faz",max:"é puro amor"},
+  {name:"Canções famosas",min:"ninguém conhece",max:"todo mundo canta junto"},
+  {name:"Marcas mais valiosas",min:"vale pouco",max:"vale bilhões"},
+  {name:"Coisas que quer fazer logo quando acorda",min:"não quero fazer",max:"quero muito"},
+  {name:"Sons que te fazem feliz",min:"nem é som",max:"felicidade para os ouvidos"},
+  {name:"Pense como estudante do EM: o que é legal?",min:"cringe",max:"super legal"},
+  {name:"Presentes de aniversário mais comuns",min:"ninguém ganha",max:"todo mundo já ganhou"},
+  {name:"Países populares para viajar",min:"ninguém vai",max:"todo mundo já foi"},
+  {name:"Coisas que te fazem feliz quando feitas pelo seu amor",min:"pouco feliz",max:"muito feliz"},
+  {name:"Animais nos quais você gostaria de montar",min:"não gostaria",max:"queria demais"},
+  {name:"Pense como uma criança: o que te faz feliz?",min:"não te faz muito feliz",max:"isso sim é felicidade"},
+  {name:"Vilões mais temíveis",min:"até eu encarava",max:"me faz ter pesadelos"},
+  {name:"Coisas fofinhas",min:"pouco fofinho",max:"um cuti-cuti"},
+  {name:"Atividades difíceis de serem feitas sozinho(a)",min:"dá pra fazer",max:"impossível"},
+  {name:"Habilidades úteis para o trabalho",min:"inútil",max:"muito útil"},
+  {name:"Pense como um gato: os lugares mais confortáveis do mundo",min:"pouco confortável",max:"muito confortável"},
+  {name:"Tamanho de animais",min:"pequeno",max:"enorme"},
+  {name:"Coisas leves",min:"pouco leve",max:"levíssimo"},
+  {name:"Frases estranhas se ditas por uma criança de 5 anos",min:"normal",max:"muito estranho"},
+  {name:"Algo surpreendente encontrado embaixo de uma pedra no parque",min:"algo comum",max:"algo surpreendente"},
+  {name:"Coisas confiáveis por todo o sempre",min:"pouco confiável",max:"confiável eternamente"},
+  {name:"Lugares onde você vai com frequência",min:"vai pouco",max:"vai muito"},
+  {name:"Drinques populares",min:"ninguém bebe isso",max:"todo mundo já bebeu"},
+  {name:"Pedidos de casamento que te fariam feliz",min:"aquele de passar vergonha",max:"algo memorável"},
+  {name:"Itens de baú do tesouro que gostaria de ter",min:"não gostaria",max:"queria muito"},
+  {name:"Tipos de festivais que gostaria de participar",min:"não iria nem pagando",max:"gastaria o salário pra ir"},
+  {name:"Brinquedos mais conhecidos",min:"desconhecido",max:"toda criança já teve um"},
+  {name:"Coisas que te deixam com sono",min:"acordadíssimo",max:"zzzzz…"},
+  {name:"Itens úteis quando perdido(a) no deserto",min:"não serve para nada",max:"salvaria sua vida"},
+  {name:"Momentos históricos que visitaria com máquina do tempo",min:"fuja, louco!",max:"iria agora"},
+  {name:"Pense como vilão: herói que menos gostaria de enfrentar",min:"derrotaria facilmente",max:"tenho medo até da sombra"},
+  {name:"Palavras que gostaria de ouvir",min:"praticamente uma ofensa",max:"mais que um elogio"},
+  {name:"Veículos mais comuns",min:"nunca vi",max:"tem um em cada esquina"},
+  {name:"Coisas que surpreenderiam se saíssem do seu corpo",min:"normal",max:"não dá pra imaginar isso"},
+  {name:"Alimentos que fazem bem",min:"nada saudável",max:"puro suco de saúde"},
+  {name:"Pense como cientista: o que gostaria de descobrir?",min:"não gostaria de descobrir",max:"merece um Nobel"},
+  {name:"Itens úteis para levar a uma ilha deserta",min:"inútil",max:"muito útil"},
+  {name:"Piadas mais engraçadas",min:"isso é ofensivo",max:"ri litros"},
+  {name:"Melhores nomes de golpes especiais para gritar",min:"não botou medo",max:"isso sim impõe respeito"},
+  {name:"Títulos de livros que te deixariam curioso",min:"ninguém se importa",max:"vou comprar"},
+  {name:"Pense como um cachorro: o que te faz feliz?",min:"nada AU-AUdacioso",max:"de balançar a cauda"},
+  {name:"Melhores jogos de tabuleiro já lançados",min:"aquele que flopou muito",max:"digno de um prêmio Spiel"},
+  {name:"Itens diferentões que gostaria de ter",min:"nem tanto",max:"isso é muito legal"},
+  {name:"Características de pessoas que gostaria no círculo de amizade",min:"nada interessante",max:"BFF na certa"},
+  {name:"Pense como um mago: qual seria o seu feitiço favorito?",min:"feitiço comum",max:"usaria toda hora"},
+  {name:"Coisas que surpreenderiam se ditas por um professor",min:"faz parte da aula",max:"por essa ninguém esperava"},
+  {name:"As coisas mais bonitas do mundo",min:"ok",max:"visão do paraíso"},
+  {name:"Os doces mais conhecidos",min:"nunca vi, nem comi",max:"vende em todo lugar"},
+  {name:"Amor verdadeiro ou apenas uma aventura?",min:"aventura",max:"amor verdadeiro"},
+  {name:"Pense como um herói: qual seria sua pose? (demonstre-a)",min:"lamentável",max:"épica"},
+  {name:"Mundos imaginários que gostaria de visitar",min:"não gostaria",max:"viveria lá o resto da vida"},
+  {name:"Coisas populares com crianças",min:"pouco conhecida",max:"muito famosa"},
+  {name:"Os nomes mais legais",min:"muito comum",max:"meu filho vai ter"},
+  {name:"Coisas que faz quando está de bom humor",min:"nunca faço",max:"faço muito"},
+  {name:"Pense como explorador: que lugares te deixam animado?",min:"um desânimo só",max:"bora lá, agora?"},
+  {name:"Habilidades úteis em relacionamentos",min:"inútil",max:"essencial"},
+  {name:"Personagens mais fortes da ficção",min:"fraco demais",max:"indestrutível"},
+  {name:"Lugares onde mais acontecem encontros românticos",min:"poucos encontros",max:"está acontecendo um agora"},
+  {name:"Um único prato pra comer até o fim da vida",min:"não escolheria",max:"comeria agora, inclusive"},
+  {name:"Pense como adolescente: algo ruim durante a aula",min:"nem tão ruim",max:"que vergonha!"},
+  {name:"Personagens fictícios com os piores temperamentos",min:"de boas",max:"explosivo"},
+  {name:"Coisas que ficaria feliz em encontrar no bolso ou bolsa",min:"nada feliz",max:"alegria pura"},
+  {name:"Caretas engraçadas (faça-as!)",min:"isso é ridículo",max:"muito engraçado!"},
+  {name:"Ações e atitudes que exigem coragem",min:"nada corajoso",max:"pura coragem"},
+  {name:"Se você tivesse um alter ego, o que gostaria que ele fosse?",min:"não gostaria",max:"é meu tipo"},
+  {name:"Habilidades importantes para um streamer",min:"desnecessária",max:"obrigatória"},
+
+  // ── TEMAS NOVOS (101–200) ──
+  {name:"Músicas que te fazem chorar",min:"olho seco",max:"choro torrencial"},
+  {name:"Coisas que você faria se ficasse invisível",min:"nada interessante",max:"muito tentador"},
+  {name:"Nomes de times que soam intimidadores",min:"apelido de pomba",max:"arrepia a espinha"},
+  {name:"Aplicativos que você mais usa no celular",min:"quase nunca abro",max:"abre sozinho de tanto uso"},
+  {name:"Profissões que você jamais gostaria de ter",min:"até daria pra fazer",max:"nem pagando muito"},
+  {name:"Séries que viciaram muito",min:"assisti um ep e parei",max:"maratonei em um fim de semana"},
+  {name:"Coisas que você evitaria em uma festa",min:"tranquilo, fica à vontade",max:"faria tudo pra escapar"},
+  {name:"Situações em que você fica sem palavras",min:"tenho resposta pra isso",max:"boquiaberto, zero palavras"},
+  {name:"Coisas que te dão segundas intenções quando ouvidas fora de contexto",min:"totalmente inocente",max:"precisaria de um contexto urgente"},
+  {name:"Palavrões internacionais que soam bonitos",min:"feio mesmo",max:"parece poesia"},
+  {name:"Coisas difíceis de explicar para crianças",min:"criança entende fácil",max:"adulto também não entende"},
+  {name:"Talentos escondidos que todo mundo deveria ter",min:"supérfluo",max:"seria um super poder"},
+  {name:"Personagens que você escolheria como parceiro de missão",min:"atrapalharia mais",max:"imbatível juntos"},
+  {name:"Comidas que parecem estranhas mas são incríveis",min:"aparência e sabor ruins",max:"feia mas deliciosa"},
+  {name:"Lugares onde você se sente em paz",min:"nem paz, nem guerra",max:"paz absoluta"},
+  {name:"Coisas que você faz só quando está sozinho",min:"faria com público",max:"morro se alguém vê"},
+  {name:"Músicas que grudam na cabeça",min:"passa fácil",max:"três dias na cabeça"},
+  {name:"Momentos de orgulho que ninguém sabe",min:"nem eu achei importante",max:"meu maior troféu secreto"},
+  {name:"Coisas que envelhecem bem",min:"piora com o tempo",max:"melhora muito com os anos"},
+  {name:"Desculpas que você já deu que eram mentira",min:"transparente demais pra enganar",max:"merecia Oscar"},
+  {name:"Coisas que a tecnologia ainda não conseguiu substituir",min:"já tem app pra isso",max:"impossível de digitalizar"},
+  {name:"Tipos de abraço",min:"abraço de protocolo",max:"abraço que cura a alma"},
+  {name:"Animais que seriam péssimos pets",min:"daria pra tentar",max:"seria um desastre total"},
+  {name:"Superpoderes inúteis que ninguém escolheria",min:"ei, tem serventia",max:"completamente inútil"},
+  {name:"Formas de desperdiçar dinheiro",min:"até faz sentido",max:"jogando no lixo mesmo"},
+  {name:"Coisas que mudam uma pessoa completamente",min:"pouca influência",max:"vida antes e depois"},
+  {name:"Músicas que animam qualquer festa",min:"baixa energia",max:"todo mundo para dançar"},
+  {name:"Formas de impressionar alguém sem dizer uma palavra",min:"passa despercebido",max:"impressão inesquecível"},
+  {name:"Coisas que você faria diferente se voltasse ao passado",min:"deixaria igual",max:"mudaria completamente"},
+  {name:"Palavras em português que soam engraçadas",min:"soa normal",max:"ri só de falar"},
+  {name:"Trabalhos que parecem fáceis mas são exaustivos",min:"realmente é tranquilo",max:"exaustão invisível"},
+  {name:"Coisas que deixam qualquer ambiente mais aconchegante",min:"não muda nada",max:"transforma o lugar"},
+  {name:"Personagens secundários que mereciam série própria",min:"aparição justa",max:"roubar a cena deveria ser crime"},
+  {name:"Hábitos que parecem bobos mas mudam a vida",min:"não faz diferença",max:"virou rotina sagrada"},
+  {name:"Momentos em que o silêncio diz mais que palavras",min:"silêncio incômodo",max:"silêncio que explica tudo"},
+  {name:"Coisas que você esperava com ansiedade quando criança",min:"nem lembrava",max:"contava os dias"},
+  {name:"Piores formas de começar uma conversa",min:"jeitinho aceitável",max:"apaga o contato depois"},
+  {name:"Músicas que te transportam para outro tempo",min:"fica no presente",max:"viagem no tempo garantida"},
+  {name:"Refeições que parecem simples mas são reconfortantes",min:"não me conforta",max:"abraço em forma de comida"},
+  {name:"Coisas que você só entende depois de crescer",min:"criança já sacava",max:"demorou décadas pra entender"},
+  {name:"Modos de saber que uma amizade é verdadeira",min:"superficial",max:"amizade pra vida toda"},
+  {name:"Objetos que guardam memórias afetivas",min:"descartável",max:"não tem preço"},
+  {name:"Formas de dizer muito com poucas palavras",min:"precisa de dissertação",max:"uma palavra basta"},
+  {name:"Cheiros que te remetem a memórias",min:"sem memória associada",max:"memória instantânea e intensa"},
+  {name:"Coisas que deveriam existir mas não existem",min:"seria supérfluo",max:"como não inventaram ainda?"},
+  {name:"Personagens que merecem uma redenção",min:"não, esse aí não tem jeito",max:"merece uma segunda chance"},
+  {name:"Formas de estragar um jantar",min:"dá pra contornar",max:"levanta e vai embora"},
+  {name:"Coisas que parecem impossíveis até você tentar",min:"continua impossível",max:"mais fácil do que parecia"},
+  {name:"Músicas que todo mundo sabe a letra sem perceber",min:"sabia que não sabia",max:"canta sem pensar"},
+  {name:"Animais com nomes engraçados em português",min:"nome comum",max:"gargalhei só de ler"},
+  {name:"Formas de se perder numa cidade nova",min:"difícil se perder",max:"garantia de aventura confusa"},
+  {name:"Coisas que você faz quando está com raiva",min:"fica quieto mesmo",max:"todo mundo nota"},
+  {name:"Cheiros que você amaria usar como perfume",min:"certeza que não funcionaria",max:"perfumaria de alto luxo"},
+  {name:"Modos de procrastinar que parecem produtivos",min:"é procrastinação pura",max:"convence a si mesmo que trabalhou"},
+  {name:"Situações em que rir é proibido e dá mais vontade",min:"segura fácil",max:"impossível conter"},
+  {name:"Palavras que você usa sem saber o significado real",min:"uso porque sei",max:"uso há anos sem saber o que é"},
+  {name:"Coisas que mudam de significado com a idade",min:"significa o mesmo",max:"completamente diferente agora"},
+  {name:"Formas de arruinar uma surpresa",min:"segura bem",max:"conta antes de chegar"},
+  {name:"Ruídos que te deixam irritado(a)",min:"consigo ignorar",max:"tira soro do sangue"},
+  {name:"Coisas que você nunca faria no trabalho mas faz em casa",min:"faria em qualquer lugar",max:"só em casa mesmo"},
+  {name:"Situações que parecem cenas de filme mas são reais",min:"mundano demais",max:"cinematográfico demais"},
+  {name:"Formas de saber que a comida vai ser boa",min:"não prevê",max:"presságio infalível"},
+  {name:"Coisas que todo mundo finge saber fazer",min:"sabe de verdade",max:"fingido por todos"},
+  {name:"Modos de perder a hora sem perceber",min:"controla bem o tempo",max:"como já são 3 da manhã?"},
+  {name:"Coisas que melhoram tudo que tocam",min:"não muda nada",max:"potencializa qualquer coisa"},
+  {name:"Formas de revelar algo constrangedor sem querer",min:"segredo guardado",max:"contou pra todo mundo sem perceber"},
+  {name:"Coisas que valem a pena esperar",min:"não compensa esperar",max:"a espera faz parte da experiência"},
+  {name:"Músicas que ficam melhores com o volume alto",min:"volume não faz diferença",max:"precisa chacoalhar as paredes"},
+  {name:"Personagens de desenho animado que seriam ótimos chefes",min:"seria um pesadelo",max:"empresa iria longe"},
+  {name:"Coisas que parecem difíceis de combinar mas combinam perfeitamente",min:"combinação estranha mesmo",max:"harmonia inesperada"},
+  {name:"Razões para ligar para alguém só para dizer oi",min:"seria estranho",max:"faz o dia da pessoa"},
+  {name:"Formas de transformar um dia ruim em bom",min:"não muda muito",max:"virada completa de humor"},
+  {name:"Coisas que todo mundo faz mas ninguém admite",min:"admite de boa",max:"negaria até na guilhotina"},
+  {name:"Objetos que deveriam ter manual de instrução mas não têm",min:"é autoexplicativo",max:"precisaria de curso"},
+  {name:"Formas de saber que você está em casa de alguém organizado",min:"caos igual ao seu",max:"nível hospitalar"},
+  {name:"Coisas que ficam melhor no dia seguinte",min:"melhor na hora",max:"no dia seguinte é outra coisa"},
+  {name:"Situações em que você prefere o texto ao telefonema",min:"prefere ligar sempre",max:"texto ou nunca"},
+  {name:"Formas de pedir desculpas sem usar a palavra desculpa",min:"precisaria dizer explicitamente",max:"a mensagem chegou sem a palavra"},
+  {name:"Coisas que você come que as pessoas olham estranho",min:"totalmente normal",max:"atraiu olhares do restaurante"},
+  {name:"Modos de saber que já passou da hora de dormir",min:"vai dormir cedo sempre",max:"o sol levantou antes de você"},
+  {name:"Razões para cancelar um plano de última hora",min:"não cancelaria por isso",max:"justificativa irrecusável"},
+  {name:"Coisas que fazem um livro impossível de largar",min:"não passa da primeira página",max:"leu de uma vez só"},
+  {name:"Momentos em que a música certa aparece na hora certa",min:"coincidência ignorável",max:"foi o universo"},
+  {name:"Formas de mostrar que você ouviu com atenção",min:"passaria despercebido",max:"a pessoa se sentiu muito ouvida"},
+  {name:"Coisas que eram tendência e envelheceram muito mal",min:"ainda funciona",max:"que saudade que não tenho"},
+  {name:"Razões para sorrir sozinho olhando o celular",min:"nada especial",max:"explicaria com muito esforço"},
+  {name:"Formas de deixar a casa com cheiro bom",min:"não muda o cheiro",max:"perfuma até o vizinho"},
+  {name:"Coisas que você guardou a vida toda e não sabe por quê",min:"jogaria fora hoje",max:"não consigo me desfazer"},
+  {name:"Tipos de pessoas que deixam qualquer ambiente mais animado",min:"passa despercebido",max:"o ambiente muda quando chega"},
+  {name:"Formas de saber que um filme vai ser bom antes de assistir",min:"presságio falso",max:"presságio infalível"},
+  {name:"Coisas que você faria com um dia livre sem obrigações",min:"provavelmente ficaria parado",max:"lista gigante de planos"},
+  {name:"Músicas perfeitas para cantar no chuveiro",min:"estraga no chuveiro",max:"performance de Grammy"},
+  {name:"Momentos em que a criança que há em você ainda aparece",min:"adulto demais pra isso",max:"criança pura ainda"},
+  {name:"Formas de saber que alguém gostou da sua piada",min:"silêncio constrangedor",max:"rindo até a próxima semana"},
+  {name:"Coisas que você fazia com os amigos que não faz mais",min:"ainda faz",max:"saudade imensurável"},
+  {name:"Razões para olhar para o céu de vez em quando",min:"olha pro chão mesmo",max:"terapia gratuita"},
+  {name:"Formas de tornar uma reunião menos chata",min:"não teria jeito",max:"salvou a reunião"},
+  {name:"Coisas que parecem pequenas mas fazem diferença no dia",min:"imperceptível",max:"muda o dia inteiro"},
 ];
+
+
+// Init on load
+window.addEventListener('DOMContentLoaded', () => {
+  const p = document.getElementById('card-back-pattern');
+  if (p) p.innerHTML = Array(25).fill('<span></span>').join('');
+});
 
 // ══════════════════════════════════
 // STATE
 // ══════════════════════════════════
 const state = {
-  gameCode:'', numPlayers:4, myPlayerNum:1, nickname:'', isHost:false,
-  round:1, groupIdx:0, groupThemes:[], firstThemeNum:1, lastThemeNum:5,
+  gameCode:'', numPlayers:0, myPlayerNum:1, nickname:'',
+  isHost:false, round:1,
+  groupIdx:0, groupThemes:[], themeNums:[], firstThemeNum:1, lastThemeNum:5,
   playerNumbers:[], myNumber:0, theme:null, selectedGroupLocal:null,
   userOrder:[], playerNames:{}
 };
@@ -762,9 +921,7 @@ function showScreen(id) {
 // ══════════════════════════════════
 function genCode() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  let c = '';
-  for (let i = 0; i < 6; i++) c += chars[Math.floor(Math.random() * chars.length)];
-  return c;
+  return Array.from({length:6}, () => chars[Math.floor(Math.random()*chars.length)]).join('');
 }
 function toast(msg) {
   const t = document.getElementById('toast');
@@ -773,113 +930,98 @@ function toast(msg) {
   setTimeout(() => t.classList.remove('show'), 2200);
 }
 function copyCode() {
-  navigator.clipboard?.writeText(state.gameCode).catch(() => {});
+  navigator.clipboard?.writeText(state.gameCode).catch(()=>{});
   toast('Código copiado: ' + state.gameCode);
 }
+function playerLabel(num) {
+  return state.playerNames[num] || `Jogador ${num}`;
+}
 function computeGame(code, numPlayers, round = 1) {
-  const rng = mulberry32(hashCode(code + '|r' + round));
-
-  // Sorteia 1 dos 20 grupos de 5 temas consecutivos (como na folha oficial)
-  const groupIdx = Math.floor(rng() * 20);
+  // Seed separada para temas (garante que temas e números não se influenciam)
+  const rngTheme = mulberry32(hashCode(code + '|r' + round + '|theme'));
+  const groupIdx = Math.floor(rngTheme() * 40); // 40 grupos × 5 = 200 temas
   const groupStart = groupIdx * 5;
   const groupThemes = THEMES.slice(groupStart, groupStart + 5);
-  const themeNums = Array.from({length: 5}, (_, i) => groupStart + i + 1);
+  const themeNums = Array.from({length:5}, (_, i) => groupStart + i + 1);
 
-  // Sorteia números dos jogadores
-  const pool = Array.from({length: 100}, (_, i) => i + 1);
+  // Seed separada para números dos jogadores — sempre 1 a 100
+  const rngNums = mulberry32(hashCode(code + '|r' + round + '|nums'));
+  const pool = Array.from({length:100}, (_, i) => i + 1);
   for (let i = pool.length - 1; i > 0; i--) {
-    const j = Math.floor(rng() * (i + 1));
+    const j = Math.floor(rngNums() * (i + 1));
     [pool[i], pool[j]] = [pool[j], pool[i]];
   }
 
-  return { groupThemes, themeNums, playerNumbers: pool.slice(0, numPlayers) };
+  return { groupIdx, groupThemes, themeNums, playerNumbers: pool.slice(0, numPlayers) };
 }
 
 // ══════════════════════════════════
-// CREATE ROOM (host)
+// CREATE ROOM
 // ══════════════════════════════════
 async function createRoom() {
   const nickname = document.getElementById('create-nickname').value.trim() || 'Jogador 1';
   const code = genCode();
-  const roomRef = db.ref(`rooms/${code}`);
-
   try {
-    // numPlayers = 0 indica dinâmico (definido quando o host iniciar)
-    await roomRef.set({ numPlayers:0, status:'lobby', round:1, createdAt:Date.now() });
-
+    await db.ref(`rooms/${code}`).set({ numPlayers:0, status:'lobby', round:1, createdAt:Date.now() });
     const playerRef = db.ref(`rooms/${code}/players/1`);
     await playerRef.set({ joinedAt:Date.now(), name:nickname });
     playerRef.onDisconnect().remove();
-
     Object.assign(state, {
       gameCode:code, numPlayers:0, myPlayerNum:1, nickname, isHost:true, round:1,
       groupThemes:[], themeNums:[], firstThemeNum:1, lastThemeNum:5,
-      playerNumbers:[], myNumber:0,
-      theme:null, selectedGroupLocal:null,
-      userOrder:[], playerNames:{ 1: nickname }
+      playerNumbers:[], myNumber:0, theme:null, selectedGroupLocal:null,
+      userOrder:[], playerNames:{1:nickname}
     });
-
     document.getElementById('lobby-code-val').textContent = code;
     showScreen('screen-lobby');
     startRoomListener(code);
-  } catch(err) {
-    alert('Erro ao criar sala: ' + err.message);
-  }
+  } catch(err) { alert('Erro ao criar sala: ' + err.message); }
 }
 
 // ══════════════════════════════════
-// JOIN ROOM (guest)
+// JOIN ROOM
 // ══════════════════════════════════
 async function joinRoom() {
   const nickname = document.getElementById('join-nickname').value.trim();
   const code = document.getElementById('join-code').value.trim().toUpperCase();
   if (!code) { alert('Insira o código da sala!'); return; }
   if (!nickname) { alert('Insira seu nome!'); return; }
-
   const roomRef = db.ref(`rooms/${code}`);
-
   try {
     const snap = await roomRef.once('value');
     const existing = snap.val();
-
-    if (!existing) { alert('Sala não encontrada. Verifique o código!'); return; }
+    if (!existing) { alert('Sala não encontrada!'); return; }
     if (existing.status !== 'lobby') { alert('Esta partida já começou!'); return; }
-
-    // Encontrar próximo slot disponível (a partir de 2)
     const taken = existing.players ? Object.keys(existing.players).map(Number) : [];
     let myPlayerNum = null;
-    for (let i = 2; i <= 8; i++) {
-      if (!taken.includes(i)) { myPlayerNum = i; break; }
-    }
+    for (let i = 2; i <= 8; i++) { if (!taken.includes(i)) { myPlayerNum = i; break; } }
     if (myPlayerNum === null) { alert('Sala cheia!'); return; }
 
-    const numPlayers = existing.numPlayers || 0; // 0 = dinâmico
+    const numPlayers = existing.numPlayers || 0;
     const round = existing.round || 1;
+
+    // Remove flag de expulsão ANTES de registrar o jogador
+    await db.ref(`rooms/${code}/kicked/${myPlayerNum}`).remove();
 
     const playerRef = db.ref(`rooms/${code}/players/${myPlayerNum}`);
     await playerRef.set({ joinedAt:Date.now(), name:nickname });
     playerRef.onDisconnect().remove();
-
-    const { groupThemes, themeNums, playerNumbers } = numPlayers >= 2
+    const { groupIdx, groupThemes, themeNums, playerNumbers } = numPlayers >= 2
       ? computeGame(code, numPlayers, round)
-      : { groupThemes:[], themeNums:[], playerNumbers:[] };
-
+      : { groupIdx:0, groupThemes:[], themeNums:[], playerNumbers:[] };
     Object.assign(state, {
       gameCode:code, numPlayers, myPlayerNum, nickname, isHost:false, round,
-      groupThemes, themeNums,
-      firstThemeNum: themeNums[0] || 1, lastThemeNum: themeNums[4] || 5,
-      playerNumbers, myNumber: playerNumbers[myPlayerNum-1] || 0,
+      groupIdx, groupThemes, themeNums,
+      firstThemeNum:themeNums[0]||1, lastThemeNum:themeNums[4]||5,
+      playerNumbers, myNumber:playerNumbers[myPlayerNum-1]||0,
       theme:null, selectedGroupLocal:null,
       userOrder: numPlayers >= 2 ? Array.from({length:numPlayers},(_,i)=>i+1) : [],
       playerNames:{}
     });
-
     document.getElementById('lobby-code-val').textContent = code;
     showScreen('screen-lobby');
     startRoomListener(code);
-  } catch(err) {
-    alert('Erro ao entrar na sala: ' + err.message);
-  }
+  } catch(err) { alert('Erro ao entrar na sala: ' + err.message); }
 }
 
 // ══════════════════════════════════
@@ -892,25 +1034,32 @@ function startRoomListener(code) {
     if (!data) return;
     const cur = document.querySelector('.screen.active')?.id;
 
-    // Sempre coleta nomes
+    // Coleta nomes em tempo real
     if (data.players) {
       Object.entries(data.players).forEach(([num, p]) => {
         if (p?.name) state.playerNames[num] = p.name;
       });
     }
 
-    // Nova rodada: host incrementou round
-    if (data.status === 'lobby' && cur && cur !== 'screen-lobby' && cur !== 'screen-home'
-        && cur !== 'screen-create' && cur !== 'screen-join') {
+    // Detecta se este jogador foi expulso
+    if (!state.isHost && data.kicked?.[state.myPlayerNum]) {
+      if (roomListener) { db.ref(`rooms/${state.gameCode}`).off(); roomListener = null; }
+      clearHintTimer();
+      showScreen('screen-home');
+      toast('⛔ Você foi expulso da sala pelo host.');
+      return;
+    }
+
+    if (data.status === 'lobby' && cur && !['screen-lobby','screen-home','screen-create','screen-join'].includes(cur)) {
       const newRound = data.round || 1;
       if (newRound !== state.round) {
-        const { groupThemes, themeNums, playerNumbers } = computeGame(state.gameCode, state.numPlayers, newRound);
+        const { groupIdx, groupThemes, themeNums, playerNumbers } = computeGame(state.gameCode, state.numPlayers, newRound);
         Object.assign(state, {
-          round: newRound, groupThemes, themeNums,
-          firstThemeNum: themeNums[0], lastThemeNum: themeNums[4],
-          playerNumbers, myNumber: playerNumbers[state.myPlayerNum-1],
+          round:newRound, groupIdx, groupThemes, themeNums,
+          firstThemeNum:themeNums[0], lastThemeNum:themeNums[4],
+          playerNumbers, myNumber:playerNumbers[state.myPlayerNum-1],
           theme:null, selectedGroupLocal:null,
-          userOrder: Array.from({length:state.numPlayers},(_,i)=>i+1)
+          userOrder:Array.from({length:state.numPlayers},(_,i)=>i+1)
         });
       }
       showScreen('screen-lobby');
@@ -918,50 +1067,33 @@ function startRoomListener(code) {
 
     if (cur === 'screen-lobby') updateLobbyUI(data);
     if (cur === 'screen-theme-pick') updateThemeSyncUI(data);
-
-    // Atualiza hints em tempo real na tela de carta e ordenação
-    if (cur === 'screen-card') renderHintsPanel('card-hints-panel', data.hints || {});
+    if (cur === 'screen-card') renderHintsPanel('card-hints-panel', data.hints||{});
     if (cur === 'screen-ordering') {
-      renderHintsPanel('ord-hints-panel', data.hints || {});
-      // Guests veem a ordem do host em tempo real
-      if (!state.isHost && data.currentOrder) {
-        state.userOrder = data.currentOrder;
-        renderOrderCards();
-      }
+      renderHintsPanel('ord-hints-panel', data.hints||{});
+      if (!state.isHost && data.currentOrder) { state.userOrder = data.currentOrder; renderOrderCards(); }
     }
 
-    // Lobby → tema (guests recebem numPlayers definitivo aqui)
     if (data.status === 'theme-pick' && cur === 'screen-lobby') {
       const np = data.numPlayers || state.numPlayers;
       if (np !== state.numPlayers) {
-        const { groupThemes, themeNums, playerNumbers } = computeGame(state.gameCode, np, state.round);
-        Object.assign(state, {
-          numPlayers: np, groupThemes, themeNums,
-          firstThemeNum: themeNums[0], lastThemeNum: themeNums[4],
-          playerNumbers, myNumber: playerNumbers[state.myPlayerNum-1],
-          userOrder: Array.from({length:np},(_,i)=>i+1)
-        });
+        const g = computeGame(state.gameCode, np, state.round);
+        Object.assign(state, { numPlayers:np, groupIdx:g.groupIdx, groupThemes:g.groupThemes, themeNums:g.themeNums, firstThemeNum:g.themeNums[0], lastThemeNum:g.themeNums[4], playerNumbers:g.playerNumbers, myNumber:g.playerNumbers[state.myPlayerNum-1], userOrder:Array.from({length:np},(_,i)=>i+1) });
       }
       renderThemePicker(); showScreen('screen-theme-pick');
     }
-    // Tema → carta
     if (data.status === 'playing' && data.selectedTheme !== undefined && cur === 'screen-theme-pick') {
       const grp = data.selectedGroup !== undefined ? data.selectedGroup : state.groupIdx;
       if (grp !== state.groupIdx) renderThemePicker(grp);
       state.selectedGroupLocal = data.selectedTheme;
       state.theme = state.groupThemes[data.selectedTheme];
       applyThemeToScreens();
-      renderHintsPanel('card-hints-panel', data.hints || {});
+      renderHintsPanel('card-hints-panel', data.hints||{});
+      startHintTimer(data.hintStartTime || Date.now());
       showScreen('screen-card');
     }
-    // Carta → ordenação (host manda todos para ordenar)
-    if (data.status === 'ordering' && (cur === 'screen-card' || cur === 'screen-theme-pick')) {
-      goToOrdering();
-    }
-    // Ordenação → resultado (host confirmou)
-    if (data.status === 'results' && data.finalOrder && cur === 'screen-ordering' && !state.isHost) {
-      state.userOrder = data.finalOrder;
-      showResults();
+    if (data.status === 'ordering' && (cur==='screen-card'||cur==='screen-theme-pick')) goToOrdering();
+    if (data.status === 'results' && data.finalOrder && cur==='screen-ordering' && !state.isHost) {
+      state.userOrder = data.finalOrder; showResults();
     }
   });
 }
@@ -970,53 +1102,53 @@ function startRoomListener(code) {
 // LOBBY UI
 // ══════════════════════════════════
 function updateLobbyUI(data) {
-  if (data.players) {
-    Object.entries(data.players).forEach(([num, p]) => {
-      if (p?.name) state.playerNames[num] = p.name;
-    });
-  }
   const joined = data.players ? Object.keys(data.players).map(Number) : [];
-  const n = joined.length || 1; // número real de quem está na sala
-
-  document.getElementById('lobby-subtitle').textContent =
-    `Rodada ${state.round} · ${joined.length} jogador${joined.length !== 1 ? 'es' : ''} na sala`;
-
+  document.getElementById('lobby-subtitle').textContent = `Rodada ${state.round} · ${joined.length} jogador${joined.length!==1?'es':''} na sala`;
   const grid = document.getElementById('lobby-players-grid');
   grid.innerHTML = '';
   joined.sort((a,b)=>a-b).forEach(i => {
     const isMe = i === state.myPlayerNum;
     const isHost = i === 1;
-    const playerData = data.players?.[i];
-    const name = playerData?.name || `Jogador ${i}`;
+    const p = data.players?.[i];
+    const name = p?.name || `Jogador ${i}`;
     const slot = document.createElement('div');
     slot.className = `lp-slot joined${isMe?' is-me':''}`;
+
+    // Botão de kick: só aparece para o host, em jogadores que não são ele mesmo
+    const kickBtn = (state.isHost && !isHost && !isMe)
+      ? `<button class="lp-kick" onclick="kickPlayer(${i})">Expulsar</button>`
+      : '';
+
     slot.innerHTML = `
-      <div class="lp-avatar">${i}</div>
+      <div class="lp-num">${i}</div>
       <div class="lp-info">
         <div class="lp-name">${name}${isHost?' &nbsp;<span class="host-badge">👑 Host</span>':''}</div>
         <div class="lp-tag">${isMe?'★ Você está aqui':'✓ Na sala'}</div>
       </div>
-      <div class="lp-icon">✓</div>
+      ${kickBtn || '<div class="lp-icon">✓</div>'}
     `;
     grid.appendChild(slot);
   });
-
-  document.getElementById('lobby-status-msg').textContent =
-    state.isHost ? 'Inicie quando todos estiverem prontos!' : 'Aguardando o host iniciar...';
-  document.getElementById('lobby-pulse').classList.remove('green');
-
+  document.getElementById('lobby-status-msg').textContent = state.isHost ? 'Inicie quando todos estiverem prontos!' : 'Aguardando o host iniciar...';
   if (state.isHost) {
     document.getElementById('host-controls').style.display = 'block';
     document.getElementById('guest-controls').style.display = 'none';
-    const startBtn = document.getElementById('start-btn');
-    startBtn.disabled = joined.length < 2;
-    startBtn.textContent = joined.length < 2
-      ? 'Aguardando mais jogadores...'
-      : `Iniciar com ${joined.length} jogadores →`;
+    const btn = document.getElementById('start-btn');
+    btn.disabled = joined.length < 2;
+    btn.textContent = joined.length < 2 ? 'Aguardando mais jogadores...' : `Iniciar com ${joined.length} jogadores →`;
   } else {
     document.getElementById('host-controls').style.display = 'none';
     document.getElementById('guest-controls').style.display = 'block';
   }
+}
+
+async function kickPlayer(playerNum) {
+  if (!state.isHost) return;
+  const name = state.playerNames[playerNum] || `Jogador ${playerNum}`;
+  if (!confirm(`Expulsar ${name} da sala?`)) return;
+  // Primeiro marca como expulso, depois remove — evita race condition
+  await db.ref(`rooms/${state.gameCode}/kicked/${playerNum}`).set(true);
+  await db.ref(`rooms/${state.gameCode}/players/${playerNum}`).remove();
 }
 
 // ══════════════════════════════════
@@ -1027,22 +1159,11 @@ async function hostStartGame() {
   const snap = await db.ref(`rooms/${state.gameCode}/players`).once('value');
   const players = snap.val() || {};
   const numPlayers = Object.keys(players).length;
-  if (numPlayers < 2) { alert('É preciso pelo menos 2 jogadores para iniciar!'); return; }
-
-  // Salva numPlayers definitivo no Firebase
+  if (numPlayers < 2) { alert('É preciso pelo menos 2 jogadores!'); return; }
   await db.ref(`rooms/${state.gameCode}`).update({ numPlayers, status:'theme-pick' });
-
-  // Calcula jogo com numPlayers real
-  const { groupThemes, themeNums, playerNumbers } = computeGame(state.gameCode, numPlayers, state.round);
-  Object.assign(state, {
-    numPlayers, groupThemes, themeNums,
-    firstThemeNum: themeNums[0], lastThemeNum: themeNums[4],
-    playerNumbers, myNumber: playerNumbers[0],
-    userOrder: Array.from({length:numPlayers},(_,i)=>i+1)
-  });
-
-  renderThemePicker();
-  showScreen('screen-theme-pick');
+  const { groupIdx, groupThemes, themeNums, playerNumbers } = computeGame(state.gameCode, numPlayers, state.round);
+  Object.assign(state, { numPlayers, groupIdx, groupThemes, themeNums, firstThemeNum:themeNums[0], lastThemeNum:themeNums[4], playerNumbers, myNumber:playerNumbers[0], userOrder:Array.from({length:numPlayers},(_,i)=>i+1) });
+  renderThemePicker(); showScreen('screen-theme-pick');
 }
 
 // ══════════════════════════════════
@@ -1050,62 +1171,60 @@ async function hostStartGame() {
 // ══════════════════════════════════
 function renderThemePicker(selectedGroupIdx) {
   const gIdx = selectedGroupIdx !== undefined ? selectedGroupIdx : state.groupIdx;
-
-  // Atualiza state com grupo selecionado
   state.groupIdx = gIdx;
-  state.groupThemes = THEMES.slice(gIdx * 5, gIdx * 5 + 5);
-  state.themeNums = Array.from({length: 5}, (_, i) => gIdx * 5 + i + 1);
+  state.groupThemes = THEMES.slice(gIdx*5, gIdx*5+5);
+  state.themeNums = Array.from({length:5}, (_,i) => gIdx*5+i+1);
   state.firstThemeNum = state.themeNums[0];
-  state.lastThemeNum = state.themeNums[4];
+  state.lastThemeNum  = state.themeNums[4];
   state.selectedGroupLocal = null;
 
   document.getElementById('tp-sub').textContent =
-    state.isHost ? 'Selecione um tema e confirme para todos.' : 'O Jogador 1 está escolhendo o tema...';
-
-  // Badge para guests
+    state.isHost ? 'Gire a roleta ou escolha manualmente!' : 'O Jogador 1 está escolhendo o tema...';
   document.getElementById('tp-group-label').textContent =
     `Grupo ${state.firstThemeNum}–${state.lastThemeNum}`;
 
-  // Seletor de grupo (só host)
   if (state.isHost) {
-    document.getElementById('tp-group-selector').style.display = 'block';
+    document.getElementById('tp-roulette-area').style.display = 'block';
     document.getElementById('tp-group-badge-wrap').style.display = 'none';
+    // Preenche select manual na primeira vez
     const sel = document.getElementById('tp-group-select');
-    // Preenche opções se ainda não foi preenchido
     if (sel.options.length === 0) {
-      for (let g = 0; g < 20; g++) {
-        const start = g * 5 + 1, end = g * 5 + 5;
+      for (let g = 0; g < 40; g++) {
         const opt = document.createElement('option');
         opt.value = g;
-        opt.textContent = `Grupo ${start}–${end}`;
+        opt.textContent = `Grupo ${g*5+1}–${g*5+5}`;
         sel.appendChild(opt);
       }
     }
     sel.value = gIdx;
+    initRouletteDrum(gIdx);
   } else {
-    document.getElementById('tp-group-selector').style.display = 'none';
+    document.getElementById('tp-roulette-area').style.display = 'none';
     document.getElementById('tp-group-badge-wrap').style.display = 'flex';
   }
 
   document.getElementById('tp-host-area').style.display = state.isHost ? 'block' : 'none';
   document.getElementById('tp-guest-area').style.display = state.isHost ? 'none' : 'block';
 
-  // Renderiza os 5 temas do grupo
+  renderThemeCards(gIdx);
+  if (state.isHost) document.getElementById('tp-confirm-btn').disabled = true;
+}
+
+function renderThemeCards(gIdx) {
   const grid = document.getElementById('tp-grid');
   grid.innerHTML = '';
-  state.groupThemes.forEach((theme, i) => {
-    const themeNum = state.themeNums[i];
+  const themes = THEMES.slice(gIdx*5, gIdx*5+5);
+  const nums   = Array.from({length:5}, (_,i) => gIdx*5+i+1);
+  themes.forEach((theme, i) => {
     const card = document.createElement('div');
-    card.className = `tp-card${state.isHost ? ' interactive' : ''}`;
+    card.className = `tp-card${state.isHost?' interactive':''}`;
     card.dataset.i = i;
     card.innerHTML = `
-      <div class="tp-num">${themeNum}</div>
+      <div class="tp-num">${nums[i]}</div>
       <div class="tp-info">
         <div class="tp-name">${theme.name}</div>
         <div class="tp-scale">
-          <div class="tp-smin">${theme.min}</div>
-          <div class="tp-sarrow"></div>
-          <div class="tp-smax">${theme.max}</div>
+          <div class="tp-smin">${theme.min}</div><div class="tp-sarrow"></div><div class="tp-smax">${theme.max}</div>
         </div>
       </div>
       <div class="tp-check">✓</div>
@@ -1113,96 +1232,163 @@ function renderThemePicker(selectedGroupIdx) {
     if (state.isHost) card.addEventListener('click', () => selectThemeLocal(i));
     grid.appendChild(card);
   });
+}
+// ══════════════════════════════════
+// ROLETA
+// ══════════════════════════════════
+const GROUP_LABELS = Array.from({length:40}, (_, g) => `Grupo ${g*5+1}–${g*5+5}`);
+let rouletteSpinning = false;
+const ITEM_H = 42;          // deve bater com height:42px do CSS
+const DRUM_OFFSET = 44;     // (130 - 42) / 2 = 44 → centraliza no drum
+const DRUM_REPS = 14;          // 14 × 40 = 560 itens
+const DRUM_START_REP = 3;      // posição inicial na repetição 3 (índice 120+)
+const DRUM_EXTRA_LOOPS = 4;    // voltas extras antes do destino
 
-  if (state.isHost) {
-    const btn = document.getElementById('tp-confirm-btn');
-    btn.disabled = true;
-  }
+function initRouletteDrum(currentIdx) {
+  const drum = document.getElementById('roulette-drum');
+  if (!drum) return;
+  // Gera DRUM_REPS repetições — espaço suficiente para qualquer animação
+  const all = Array.from({length: DRUM_REPS}, () => GROUP_LABELS).flat();
+  drum.innerHTML = all.map(lbl => `<div class="roulette-item">${lbl}</div>`).join('');
+  // Posiciona no grupo atual na repetição DRUM_START_REP
+  const targetIdx = DRUM_START_REP * 40 + currentIdx;
+  drum.style.transition = 'none';
+  drum.style.transform = `translateY(${DRUM_OFFSET - targetIdx * ITEM_H}px)`;
+  updateDrumHighlight(currentIdx, targetIdx);
+  document.getElementById('roulette-result').innerHTML =
+    `Grupo atual: <strong>${GROUP_LABELS[currentIdx]}</strong>`;
 }
 
+function updateDrumHighlight(gIdx, targetIdx) {
+  const base = targetIdx !== undefined ? targetIdx : (DRUM_START_REP * 40 + gIdx);
+  document.querySelectorAll('.roulette-item').forEach((el, i) => {
+    el.classList.remove('center','near-1','near-2');
+    const dist = Math.abs(i - base);
+    if (dist === 0) el.classList.add('center');
+    else if (dist === 1) el.classList.add('near-1');
+    else if (dist === 2) el.classList.add('near-2');
+  });
+}
+
+function spinRoulette() {
+  if (rouletteSpinning) return;
+  rouletteSpinning = true;
+
+  const btn    = document.getElementById('btn-spin');
+  const outer  = document.querySelector('.roulette-drum-outer');
+  const drum   = document.getElementById('roulette-drum');
+  const result = document.getElementById('roulette-result');
+
+  btn.disabled = true;
+  btn.textContent = '⏳ Girando...';
+  outer.classList.add('spinning');
+  outer.classList.remove('landing');
+  result.classList.remove('landed');
+  result.innerHTML = '🎲 Sorteando...';
+
+  const finalGroup = Math.floor(Math.random() * 40);
+
+  // Destino: avança EXTRA_LOOPS voltas a partir da posição inicial (rep START_REP)
+  // finalIdx fica dentro do drum garantidamente
+  const finalIdx = (DRUM_START_REP + DRUM_EXTRA_LOOPS) * 40 + finalGroup;
+  // Ex: (3+4)*40 + finalGroup = 280 + finalGroup → máx 319, drum tem 560 ✓
+  const finalY = DRUM_OFFSET - finalIdx * ITEM_H;
+
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      drum.style.transition = 'transform 3.6s cubic-bezier(0.08, 0.82, 0.17, 1)';
+      drum.style.transform  = `translateY(${finalY}px)`;
+    });
+  });
+
+  setTimeout(() => {
+    outer.classList.remove('spinning');
+    outer.classList.add('landing');
+    updateDrumHighlight(finalGroup, finalIdx);
+    result.classList.add('landed');
+    result.innerHTML = `🎯 Sorteado: <strong>${GROUP_LABELS[finalGroup]}</strong>`;
+    btn.disabled = false;
+    btn.textContent = '🎰 Girar Novamente';
+    rouletteSpinning = false;
+
+    setTimeout(() => outer.classList.remove('landing'), 1500);
+
+    // Reposiciona para rep DRUM_START_REP sem animação
+    setTimeout(() => {
+      const resetIdx = DRUM_START_REP * 40 + finalGroup;
+      drum.style.transition = 'none';
+      drum.style.transform  = `translateY(${DRUM_OFFSET - resetIdx * ITEM_H}px)`;
+      updateDrumHighlight(finalGroup, resetIdx);
+    }, 500);
+
+    onGroupChange(String(finalGroup));
+  }, 3700);
+}
+
+function toggleManualSelect() {
+  const sel = document.getElementById('tp-group-selector');
+  sel.style.display = sel.style.display === 'none' ? 'block' : 'none';
+}
 function onGroupChange(val) {
   const gIdx = parseInt(val);
   renderThemePicker(gIdx);
-  // Sincroniza grupo escolhido com Firebase para guests verem
   db.ref(`rooms/${state.gameCode}/pendingGroup`).set(gIdx);
 }
-
-function selectThemeLocal(localIdx) {
-  if (!state.isHost) return;
-  state.selectedGroupLocal = localIdx;
-  document.querySelectorAll('.tp-card').forEach((c,i) => c.classList.toggle('selected', i===localIdx));
-  const btn = document.getElementById('tp-confirm-btn');
-  btn.disabled = false;
-  // Sync pending selection to Firebase so others can see
-  db.ref(`rooms/${state.gameCode}/pendingTheme`).set(localIdx);
+function selectThemeLocal(i) {
+  state.selectedGroupLocal = i;
+  document.querySelectorAll('.tp-card').forEach((c,j) => c.classList.toggle('selected', j===i));
+  document.getElementById('tp-confirm-btn').disabled = false;
+  db.ref(`rooms/${state.gameCode}/pendingTheme`).set(i);
 }
-
 function updateThemeSyncUI(data) {
   if (!state.isHost) {
-    // Sync grupo
     if (data.pendingGroup !== undefined && data.pendingGroup !== state.groupIdx) {
-      renderThemePicker(data.pendingGroup);
+      const gIdx = data.pendingGroup;
+      state.groupIdx = gIdx;
+      state.groupThemes = THEMES.slice(gIdx*5, gIdx*5+5);
+      state.themeNums = Array.from({length:5}, (_,i) => gIdx*5+i+1);
+      state.firstThemeNum = state.themeNums[0];
+      state.lastThemeNum  = state.themeNums[4];
+      document.getElementById('tp-group-label').textContent =
+        `Grupo ${state.firstThemeNum}–${state.lastThemeNum}`;
+      renderThemeCards(gIdx);
     }
-    // Sync tema selecionado dentro do grupo
     if (data.pendingTheme !== undefined) {
-      document.querySelectorAll('.tp-card').forEach((c, i) =>
+      document.querySelectorAll('.tp-card').forEach((c,i) =>
         c.classList.toggle('selected', i === data.pendingTheme));
     }
-    // Atualiza badge do grupo
-    document.getElementById('tp-group-label').textContent =
-      `Grupo ${state.firstThemeNum}–${state.lastThemeNum}`;
   }
 }
-
 async function confirmTheme() {
   if (!state.isHost || state.selectedGroupLocal === null) return;
   state.theme = state.groupThemes[state.selectedGroupLocal];
+  const hintStartTime = Date.now();
   await db.ref(`rooms/${state.gameCode}`).update({
-    status: 'playing',
-    selectedTheme: state.selectedGroupLocal,
-    selectedGroup: state.groupIdx,
-    pendingGroup: null, pendingTheme: null
+    status:'playing', selectedTheme:state.selectedGroupLocal,
+    selectedGroup:state.groupIdx, pendingGroup:null, pendingTheme:null,
+    hintStartTime
   });
   applyThemeToScreens();
   renderHintsPanel('card-hints-panel', {});
+  startHintTimer(hintStartTime);
   showScreen('screen-card');
 }
-
 function applyThemeToScreens() {
-  const theme = state.theme;
-  const n = state.myNumber;
+  const theme = state.theme, n = state.myNumber;
   document.getElementById('corner-tl').textContent = n;
   document.getElementById('corner-br').textContent = n;
   document.getElementById('my-number').textContent = n;
   document.getElementById('theme-group-badge').textContent =
-    `Tema #${state.themeNums[state.selectedGroupLocal]}`;
+    `Tema ${state.themeNums[state.selectedGroupLocal]} de 200`;
   document.getElementById('theme-name').textContent = theme.name;
   document.getElementById('scale-min').textContent = theme.min;
   document.getElementById('scale-max').textContent = theme.max;
   document.getElementById('ord-theme-name').textContent = theme.name;
   document.getElementById('ord-scale-min').textContent = theme.min;
   document.getElementById('ord-scale-max').textContent = theme.max;
-  document.getElementById('sb-min').textContent = '⬆ maior';
-  document.getElementById('sb-max').textContent = 'menor ⬇';
-  document.getElementById('sb-min2').textContent = '⬆ maior';
-  document.getElementById('sb-max2').textContent = 'menor ⬇';
-
-  // Controles da tela de carta: só host avança
   document.getElementById('card-host-controls').style.display = state.isHost ? 'block' : 'none';
   document.getElementById('card-guest-controls').style.display = state.isHost ? 'none' : 'block';
-}
-
-// ══════════════════════════════════
-// ORDERING
-// ══════════════════════════════════
-function goToOrdering() {
-  state.userOrder = Array.from({length:state.numPlayers},(_,i)=>i+1);
-  renderOrderCards();
-  showScreen('screen-ordering');
-}
-
-function playerLabel(num) {
-  return state.playerNames[num] || `Jogador ${num}`;
+  resetHintInput();
 }
 
 // ══════════════════════════════════
@@ -1211,28 +1397,59 @@ function playerLabel(num) {
 function onHintInput(el) {
   const val = el.value;
   document.getElementById('hint-char-count').textContent = val.length;
-  // Salva no Firebase com debounce
-  clearTimeout(el._t);
-  el._t = setTimeout(() => {
-    db.ref(`rooms/${state.gameCode}/hints/${state.myPlayerNum}`).set(val.trim() || null);
-  }, 400);
+  const btn    = document.getElementById('confirm-hint-btn');
+  const status = document.getElementById('hint-status');
+  if (val.trim().length > 0) {
+    btn.disabled = false;
+    btn.classList.remove('confirmed');
+    btn.textContent = 'Confirmar Dica ✓';
+    status.textContent = '✏️ editando...';
+    status.className = 'hint-status editing';
+  } else {
+    btn.disabled = true;
+    btn.classList.remove('confirmed');
+    status.textContent = '';
+    status.className = 'hint-status';
+  }
 }
 
+async function confirmHint() {
+  const textarea = document.getElementById('my-hint-input');
+  const val = textarea.value.trim();
+  if (!val) return;
+  await db.ref(`rooms/${state.gameCode}/hints/${state.myPlayerNum}`).set(val);
+  const btn    = document.getElementById('confirm-hint-btn');
+  const status = document.getElementById('hint-status');
+  btn.disabled = true;
+  btn.classList.add('confirmed');
+  btn.textContent = '✓ Dica enviada!';
+  status.textContent = '✓ enviada';
+  status.className = 'hint-status sent';
+}
+
+function resetHintInput() {
+  const textarea  = document.getElementById('my-hint-input');
+  const btn       = document.getElementById('confirm-hint-btn');
+  const status    = document.getElementById('hint-status');
+  const charCount = document.getElementById('hint-char-count');
+  if (textarea)  { textarea.value = ''; textarea.disabled = false; }
+  if (btn)       { btn.disabled = true; btn.classList.remove('confirmed'); btn.textContent = 'Confirmar Dica ✓'; }
+  if (status)    { status.textContent = ''; status.className = 'hint-status'; }
+  if (charCount) charCount.textContent = '0';
+}
 function renderHintsPanel(panelId, hints) {
   const panel = document.getElementById(panelId);
   if (!panel) return;
   panel.innerHTML = '';
   for (let i = 1; i <= state.numPlayers; i++) {
     const isMe = i === state.myPlayerNum;
-    const name = state.playerNames[i] || `Jogador ${i}`;
     const hint = hints[i] || '';
     const row = document.createElement('div');
     row.className = `hint-row${isMe?' mine':''}${hint?' has-hint':''}`;
     row.innerHTML = `
-      <div class="hint-avatar">${i}</div>
       <div class="hint-body">
-        <div class="hint-player-name">${name}${isMe?' (Você)':''}</div>
-        <div class="hint-text${hint?'':' empty'}">${hint || 'Ainda não digitou a dica...'}</div>
+        <div class="hint-player-name">${playerLabel(i)}${isMe?' (Você)':''}</div>
+        <div class="hint-text${hint?'':' empty'}">${hint||'Ainda não digitou a dica...'}</div>
       </div>
     `;
     panel.appendChild(row);
@@ -1240,83 +1457,104 @@ function renderHintsPanel(panelId, hints) {
 }
 
 // ══════════════════════════════════
+// HINT TIMER — 3 minutos
+// ══════════════════════════════════
+const HINT_DURATION = 180; // segundos
+let timerInterval = null;
+
+function startHintTimer(startTime) {
+  clearInterval(timerInterval);
+  const countEl  = document.getElementById('timer-count');
+  const fillEl   = document.getElementById('timer-fill');
+  const expEl    = document.getElementById('timer-expired');
+  const textarea = document.getElementById('my-hint-input');
+  expEl.style.display = 'none';
+  if (textarea) textarea.disabled = false;
+
+  function tick() {
+    const elapsed = Math.floor((Date.now() - startTime) / 1000);
+    const remaining = Math.max(0, HINT_DURATION - elapsed);
+    const pct = (remaining / HINT_DURATION) * 100;
+
+    const m = Math.floor(remaining / 60);
+    const s = remaining % 60;
+    countEl.textContent = `${m}:${s.toString().padStart(2,'0')}`;
+
+    // Cores progressivas
+    const isWarning = remaining <= 60;
+    const isDanger  = remaining <= 30;
+    countEl.className = `timer-count${isDanger?' danger':isWarning?' warning':''}`;
+    fillEl.className  = `timer-fill${isDanger?' danger':isWarning?' warning':''}`;
+    fillEl.style.width = pct + '%';
+
+    // Tempo esgotado
+    if (remaining === 0) {
+      clearInterval(timerInterval);
+      if (textarea) textarea.disabled = true;
+      expEl.style.display = 'block';
+    }
+  }
+
+  tick();
+  timerInterval = setInterval(tick, 500);
+}
+
+function clearHintTimer() {
+  clearInterval(timerInterval);
+  timerInterval = null;
+  const countEl = document.getElementById('timer-count');
+  const fillEl  = document.getElementById('timer-fill');
+  const expEl   = document.getElementById('timer-expired');
+  const textarea = document.getElementById('my-hint-input');
+  if (countEl) countEl.textContent = '3:00';
+  if (fillEl)  { fillEl.style.width = '100%'; fillEl.className = 'timer-fill'; }
+  if (expEl)   expEl.style.display = 'none';
+  if (textarea) textarea.disabled = false;
+}
+
+// ══════════════════════════════════
 // ORDERING
 // ══════════════════════════════════
 async function goToOrdering() {
+  clearHintTimer();
   state.userOrder = Array.from({length:state.numPlayers},(_,i)=>i+1);
-
-  // Host avisa todos que é hora de ordenar e publica ordem inicial
-  if (state.isHost) {
-    await db.ref(`rooms/${state.gameCode}`).update({
-      status: 'ordering',
-      currentOrder: state.userOrder
-    });
-  }
-
-  // Busca hints atuais
+  if (state.isHost) await db.ref(`rooms/${state.gameCode}`).update({ status:'ordering', currentOrder:state.userOrder });
   const snap = await db.ref(`rooms/${state.gameCode}/hints`).once('value');
-  const hints = snap.val() || {};
-  renderHintsPanel('ord-hints-panel', hints);
-
-  // Controles host vs guest
+  renderHintsPanel('ord-hints-panel', snap.val()||{});
   document.getElementById('ord-host-controls').style.display = state.isHost ? 'block' : 'none';
   document.getElementById('ord-guest-controls').style.display = state.isHost ? 'none' : 'block';
-  document.getElementById('ord-sub').textContent = state.isHost
-    ? 'Arraste do maior (1º) ao menor (último)'
-    : 'Visualizando a ordenação do Jogador 1';
-
-  renderOrderCards();
-  showScreen('screen-ordering');
+  document.getElementById('ord-sub').textContent = state.isHost ? 'Arraste do maior (1º) ao menor (último)' : 'Visualizando a ordenação do Jogador 1';
+  renderOrderCards(); showScreen('screen-ordering');
 }
-
 let dragIdx = null;
 function renderOrderCards() {
   const list = document.getElementById('cards-list');
   list.innerHTML = '';
   const canDrag = state.isHost;
-
   state.userOrder.forEach((playerNum, idx) => {
     const isMe = playerNum === state.myPlayerNum;
-    const isFirst = idx === 0;
-    const isLast = idx === state.userOrder.length - 1;
+    const isFirst = idx === 0, isLast = idx === state.userOrder.length-1;
     const card = document.createElement('div');
     card.className = `ord-card${isMe?' is-me':''}${!canDrag?' readonly':''}`;
-    card.draggable = canDrag;
-    card.dataset.idx = idx;
+    card.draggable = canDrag; card.dataset.idx = idx;
     card.innerHTML = `
       <div class="ord-pos">${idx+1}º</div>
-      <div class="ord-avatar">${playerNum}</div>
       <div class="ord-info">
         <div class="ord-name">${playerLabel(playerNum)}</div>
         ${isMe?'<div class="ord-you">★ Você</div>':''}
       </div>
-      ${isFirst ? '<div class="ord-indicator top">MAIOR</div>' : ''}
-      ${isLast  ? '<div class="ord-indicator bottom">MENOR</div>' : ''}
-      <div class="ord-handle"${!canDrag?' style="display:none"':''}>⠿</div>
+      ${isFirst?'<div class="ord-indicator top">MAIOR</div>':''}
+      ${isLast?'<div class="ord-indicator bottom">MENOR</div>':''}
+      ${canDrag?'<div class="ord-handle">⠿</div>':''}
     `;
-
     if (canDrag) {
       card.addEventListener('dragstart', e => { dragIdx=idx; setTimeout(()=>card.classList.add('dragging'),0); e.dataTransfer.effectAllowed='move'; });
       card.addEventListener('dragend', () => { card.classList.remove('dragging'); document.querySelectorAll('.ord-card').forEach(c=>c.classList.remove('drag-over')); dragIdx=null; });
       card.addEventListener('dragover', e => { e.preventDefault(); document.querySelectorAll('.ord-card').forEach(c=>c.classList.remove('drag-over')); card.classList.add('drag-over'); });
-      card.addEventListener('drop', e => {
-        e.preventDefault();
-        if (dragIdx===null||dragIdx===idx) return;
-        const[m]=state.userOrder.splice(dragIdx,1);
-        state.userOrder.splice(idx,0,m);
-        // Sincroniza ordem com Firebase em tempo real
-        db.ref(`rooms/${state.gameCode}/currentOrder`).set(state.userOrder);
-        renderOrderCards();
-      });
-      // Touch
+      card.addEventListener('drop', e => { e.preventDefault(); if(dragIdx===null||dragIdx===idx)return; const[m]=state.userOrder.splice(dragIdx,1); state.userOrder.splice(idx,0,m); db.ref(`rooms/${state.gameCode}/currentOrder`).set(state.userOrder); renderOrderCards(); });
       card.addEventListener('touchstart',e=>{dragIdx=idx;},{passive:true});
       card.addEventListener('touchmove',e=>{e.preventDefault();const el=document.elementFromPoint(e.touches[0].clientX,e.touches[0].clientY);const t=el&&el.closest('.ord-card');document.querySelectorAll('.ord-card').forEach(c=>c.classList.remove('drag-over'));if(t&&t!==card)t.classList.add('drag-over');},{passive:false});
-      card.addEventListener('touchend',e=>{
-        const el=document.elementFromPoint(e.changedTouches[0].clientX,e.changedTouches[0].clientY);
-        const t=el&&el.closest('.ord-card');
-        if(t&&dragIdx!==null){const ti=parseInt(t.dataset.idx);if(!isNaN(ti)&&ti!==dragIdx){const[m]=state.userOrder.splice(dragIdx,1);state.userOrder.splice(ti,0,m);db.ref(`rooms/${state.gameCode}/currentOrder`).set(state.userOrder);renderOrderCards();return;}}
-        document.querySelectorAll('.ord-card').forEach(c=>c.classList.remove('drag-over'));dragIdx=null;
-      });
+      card.addEventListener('touchend',e=>{const el=document.elementFromPoint(e.changedTouches[0].clientX,e.changedTouches[0].clientY);const t=el&&el.closest('.ord-card');if(t&&dragIdx!==null){const ti=parseInt(t.dataset.idx);if(!isNaN(ti)&&ti!==dragIdx){const[m]=state.userOrder.splice(dragIdx,1);state.userOrder.splice(ti,0,m);db.ref(`rooms/${state.gameCode}/currentOrder`).set(state.userOrder);renderOrderCards();return;}}document.querySelectorAll('.ord-card').forEach(c=>c.classList.remove('drag-over'));dragIdx=null;});
     }
     list.appendChild(card);
   });
@@ -1327,54 +1565,65 @@ function renderOrderCards() {
 // ══════════════════════════════════
 async function confirmOrdering() {
   if (!state.isHost) return;
-  // Publica ordem final → todos vão para resultado
-  await db.ref(`rooms/${state.gameCode}`).update({
-    status: 'results',
-    finalOrder: state.userOrder
-  });
+  await db.ref(`rooms/${state.gameCode}`).update({ status:'results', finalOrder:state.userOrder });
   showResults();
 }
-
 function showResults() {
-  // Ordem correta: maior número em 1º, menor em último (decrescente)
-  const actualOrder = Array.from({length:state.numPlayers},(_,i)=>i+1)
-    .sort((a,b)=>state.playerNumbers[b-1]-state.playerNumbers[a-1]);
+  // actualOrder: jogadores ordenados do maior número (1º) ao menor (último)
+  const actualOrder = Array.from({length:state.numPlayers}, (_, i) => i + 1)
+    .sort((a, b) => state.playerNumbers[b-1] - state.playerNumbers[a-1]);
+
   let correct = 0;
-  state.userOrder.forEach((p,i)=>{ if(p===actualOrder[i]) correct++; });
-  const ratio = correct/state.numPlayers;
-  const title = ratio===1?'🎉 Perfeito!':ratio>=.75?'😄 Muito bom!':ratio>=.5?'🙂 Não foi mal!':ratio>=.25?'😅 Quase lá...':'😬 Pode melhorar!';
+  state.userOrder.forEach((p, i) => { if (p === actualOrder[i]) correct++; });
+
+  const ratio = correct / state.numPlayers;
+  const isPerfect = ratio === 1;
+  const title = isPerfect ? '🎉 Perfeito!' : ratio>=.75 ? '😄 Muito bom!' : ratio>=.5 ? '🙂 Não foi mal!' : ratio>=.25 ? '😅 Quase lá...' : '😬 Pode melhorar!';
+
   document.getElementById('results-title').textContent = title;
   document.getElementById('score-display').textContent = `${correct}/${state.numPlayers}`;
   document.getElementById('result-theme-name').textContent = state.theme.name;
+
   const list = document.getElementById('correct-order-list');
   list.innerHTML = '';
-  actualOrder.forEach((playerNum,pos)=>{
+
+  actualOrder.forEach((playerNum, pos) => {
     const userPos = state.userOrder.indexOf(playerNum);
-    const isCorrect = userPos===pos;
-    const isMe = playerNum===state.myPlayerNum;
-    const diff = Math.abs(userPos-pos);
+    const isCorrect = userPos === pos;
+    const isMe = playerNum === state.myPlayerNum;
+    const diff = Math.abs(userPos - pos);
     const isFirst = pos === 0;
     const isLast = pos === state.numPlayers - 1;
+
     const div = document.createElement('div');
-    div.className = `res-card ${isCorrect?'correct':'wrong'}`;
+    div.className = `res-card ${isCorrect ? 'correct' : 'wrong'}`;
+    div.style.animationDelay = `${pos * 0.12}s`;
     div.innerHTML = `
       <div class="res-pos">${pos+1}º</div>
       <div class="res-info">
         <div class="res-player">
-          ${playerLabel(playerNum)}${isMe?' <span style="color:var(--blue);font-size:.75rem">(Você)</span>':''}
-          ${isFirst?'<span class="ord-indicator top" style="margin-left:.4rem">MAIOR</span>':''}
-          ${isLast ?'<span class="ord-indicator bottom" style="margin-left:.4rem">MENOR</span>':''}
+          ${playerLabel(playerNum)}
+          ${isMe ? '<span style="color:var(--blue);font-size:.75rem">(Você)</span>' : ''}
+          ${isFirst ? '<span class="ord-indicator top">MAIOR</span>' : ''}
+          ${isLast  ? '<span class="ord-indicator bottom">MENOR</span>' : ''}
         </div>
-        <div class="res-num">Número: <strong>${state.playerNumbers[playerNum-1]}</strong>${isCorrect?' · ✓ Correto!':` · colocado em ${userPos+1}º (${diff} posição${diff>1?'ões':''} de distância)`}</div>
+        <div class="res-num">
+          Número: <strong>${state.playerNumbers[playerNum-1]}</strong>
+          ${isCorrect ? ' · ✓ Correto!' : ` · colocado em ${userPos+1}º (${diff} posição${diff>1?'ões':''} de distância)`}
+        </div>
       </div>
-      <div class="res-icon">${isCorrect?'✓':'✗'}</div>
+      <div class="res-icon">${isCorrect ? '✓' : '✗'}</div>
     `;
     list.appendChild(div);
   });
+
   showScreen('screen-results');
+
   const btn = document.getElementById('new-round-btn');
-  btn.textContent = state.isHost ? '🔄 Nova Rodada' : '⏳ Aguardando Nova Rodada...';
-  btn.style.opacity = state.isHost ? '1' : '0.6';
+  if (btn) {
+    btn.textContent = state.isHost ? '🔄 Nova Rodada' : '⏳ Aguardando Nova Rodada...';
+    btn.style.opacity = state.isHost ? '1' : '0.6';
+  }
 }
 
 // ══════════════════════════════════
@@ -1387,19 +1636,16 @@ async function leaveRoom() {
   }
   showScreen('screen-home');
 }
-
 async function newRound() {
-  if (!state.isHost) {
-    toast('Aguardando Jogador 1 iniciar a próxima rodada...');
-    return;
-  }
-  const nextRound = (state.round || 1) + 1;
+  if (!state.isHost) { toast('Aguardando Jogador 1 iniciar a próxima rodada...'); return; }
+  clearHintTimer();
+  const nextRound = (state.round||1) + 1;
   await db.ref(`rooms/${state.gameCode}`).update({
-    status: 'lobby', round: nextRound,
-    selectedTheme: null, pendingTheme: null, pendingGroup: null,
-    selectedGroup: null, currentOrder: null, finalOrder: null, hints: null
+    status:'lobby', round:nextRound,
+    selectedTheme:null, pendingTheme:null, pendingGroup:null,
+    selectedGroup:null, currentOrder:null, finalOrder:null,
+    hints:null, hintStartTime:null, kicked:null
   });
-  // O listener detecta a mudança e navega todos para o lobby
 }
 </script>
 </body>
