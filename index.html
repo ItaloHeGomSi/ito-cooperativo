@@ -203,17 +203,41 @@
 
     /* ── CARD ── */
     .screen-inner { width:100%; max-width:440px; display:flex; flex-direction:column; align-items:center; }
-    .card-flip-wrap { width:200px; height:280px; perspective:900px; margin:.75rem 0; cursor:pointer; -webkit-tap-highlight-color:transparent; }
-    .card-flip-inner { width:100%; height:100%; position:relative; transform-style:preserve-3d; transition:transform .7s cubic-bezier(.4,0,.2,1); }
-    .card-flip-wrap.flipped .card-flip-inner { transform:rotateY(180deg); }
-    .card-face { position:absolute; inset:0; border-radius:18px; backface-visibility:hidden; -webkit-backface-visibility:hidden; }
-    .card-back { background:linear-gradient(135deg,#1a1430 0%,#0d0d1a 100%); border:3px solid var(--card-border); box-shadow:0 24px 64px rgba(0,0,0,.55); display:flex; align-items:center; justify-content:center; flex-direction:column; gap:.5rem; overflow:hidden; }
+    .card-flip-wrap {
+      width:200px; height:280px; perspective:1000px; margin:.75rem 0;
+      cursor:pointer; -webkit-tap-highlight-color:transparent;
+    }
+    .card-flip-inner {
+      width:100%; height:100%; position:relative;
+      transform-style:preserve-3d; -webkit-transform-style:preserve-3d;
+      transition:transform .7s cubic-bezier(.4,0,.2,1);
+    }
+    .card-flip-wrap.flipped .card-flip-inner {
+      transform:rotateY(180deg); -webkit-transform:rotateY(180deg);
+    }
+    .card-face {
+      position:absolute; inset:0; border-radius:18px;
+      backface-visibility:hidden; -webkit-backface-visibility:hidden;
+      transform:translateZ(1px); -webkit-transform:translateZ(1px);
+    }
+    .card-back {
+      background:linear-gradient(135deg,#1a1430 0%,#0d0d1a 100%);
+      border:3px solid var(--card-border); box-shadow:0 24px 64px rgba(0,0,0,.55);
+      display:flex; align-items:center; justify-content:center;
+      flex-direction:column; gap:.5rem; overflow:hidden;
+    }
     .card-back::before { content:''; position:absolute; inset:10px; border-radius:12px; border:1px solid rgba(212,160,23,.2); }
     .card-back-pattern { display:grid; grid-template-columns:repeat(5,1fr); gap:8px; padding:2rem; opacity:.12; position:absolute; inset:0; align-content:center; }
     .card-back-pattern span { width:18px; height:18px; border-radius:50%; background:var(--gold); display:block; }
     .card-back-logo { font-family:'Playfair Display',serif; font-size:2.8rem; font-weight:900; color:var(--gold); letter-spacing:-2px; position:relative; z-index:1; text-shadow:0 0 30px rgba(212,160,23,.4); }
     .card-back-hint { font-size:.6rem; letter-spacing:.2em; text-transform:uppercase; color:rgba(212,160,23,.5); position:relative; z-index:1; }
-    .card-front { background:var(--card-bg); border:3px solid var(--card-border); box-shadow:0 24px 64px rgba(0,0,0,.55),0 2px 0 rgba(255,255,255,.12) inset; transform:rotateY(180deg); display:flex; align-items:center; justify-content:center; }
+    .card-front {
+      background:var(--card-bg); border:3px solid var(--card-border);
+      box-shadow:0 24px 64px rgba(0,0,0,.55),0 2px 0 rgba(255,255,255,.12) inset;
+      display:flex; align-items:center; justify-content:center;
+      transform:rotateY(180deg) translateZ(1px);
+      -webkit-transform:rotateY(180deg) translateZ(1px);
+    }
     .card-corner { position:absolute; font-family:'Playfair Display',serif; font-size:1.25rem; font-weight:700; color:#5a3e20; }
     .card-corner.tl { top:12px; left:14px; }
     .card-corner.br { bottom:12px; right:14px; transform:rotate(180deg); }
