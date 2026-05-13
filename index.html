@@ -1001,6 +1001,8 @@ async function createRoom() {
     const playerRef = db.ref(`rooms/${code}/players/1`);
     await playerRef.set({ joinedAt:Date.now(), name:nickname });
     playerRef.onDisconnect().remove();
+    // Se o host desconectar, apaga a sala inteira automaticamente
+    db.ref(`rooms/${code}`).onDisconnect().remove();
     Object.assign(state, {
       gameCode:code, numPlayers:0, myPlayerNum:1, nickname, isHost:true, round:1,
       groupThemes:[], themeNums:[], firstThemeNum:1, lastThemeNum:5,
