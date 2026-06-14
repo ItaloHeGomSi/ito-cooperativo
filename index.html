@@ -1349,7 +1349,7 @@ function renderThemePicker(selectedGroupIdx) {
     // Preenche select manual na primeira vez
     const sel = document.getElementById('tp-group-select');
     if (sel.options.length === 0) {
-      for (let g = 0; g < 40; g++) {
+      for (let g = 0; g < 60; g++) {
         const opt = document.createElement('option');
         opt.value = g;
         opt.textContent = `Grupo ${g*5+1}–${g*5+5}`;
@@ -1396,7 +1396,7 @@ function renderThemeCards(gIdx) {
 // ══════════════════════════════════
 // ROLETA
 // ══════════════════════════════════
-const GROUP_LABELS = Array.from({length:40}, (_, g) => `Grupo ${g*5+1}–${g*5+5}`);
+const GROUP_LABELS = Array.from({length:60}, (_, g) => `Grupo ${g*5+1}–${g*5+5}`);
 let rouletteSpinning = false;
 const ITEM_H = 42;          // deve bater com height:42px do CSS
 const DRUM_OFFSET = 44;     // (130 - 42) / 2 = 44 → centraliza no drum
@@ -1411,7 +1411,7 @@ function initRouletteDrum(currentIdx) {
   const all = Array.from({length: DRUM_REPS}, () => GROUP_LABELS).flat();
   drum.innerHTML = all.map(lbl => `<div class="roulette-item">${lbl}</div>`).join('');
   // Posiciona no grupo atual na repetição DRUM_START_REP
-  const targetIdx = DRUM_START_REP * 40 + currentIdx;
+  const targetIdx = DRUM_START_REP * 60 + currentIdx;
   drum.style.transition = 'none';
   drum.style.transform = `translateY(${DRUM_OFFSET - targetIdx * ITEM_H}px)`;
   updateDrumHighlight(currentIdx, targetIdx);
@@ -1420,7 +1420,7 @@ function initRouletteDrum(currentIdx) {
 }
 
 function updateDrumHighlight(gIdx, targetIdx) {
-  const base = targetIdx !== undefined ? targetIdx : (DRUM_START_REP * 40 + gIdx);
+  const base = targetIdx !== undefined ? targetIdx : (DRUM_START_REP * 60 + gIdx);
   document.querySelectorAll('.roulette-item').forEach((el, i) => {
     el.classList.remove('center','near-1','near-2');
     const dist = Math.abs(i - base);
@@ -1446,11 +1446,11 @@ function spinRoulette() {
   result.classList.remove('landed');
   result.innerHTML = '🎲 Sorteando...';
 
-  const finalGroup = Math.floor(Math.random() * 40);
+  const finalGroup = Math.floor(Math.random() * 60);
 
   // Destino: avança EXTRA_LOOPS voltas a partir da posição inicial (rep START_REP)
   // finalIdx fica dentro do drum garantidamente
-  const finalIdx = (DRUM_START_REP + DRUM_EXTRA_LOOPS) * 40 + finalGroup;
+  const finalIdx = (DRUM_START_REP + DRUM_EXTRA_LOOPS) * 60 + finalGroup;
   // Ex: (3+4)*40 + finalGroup = 280 + finalGroup → máx 319, drum tem 560 ✓
   const finalY = DRUM_OFFSET - finalIdx * ITEM_H;
 
@@ -1475,7 +1475,7 @@ function spinRoulette() {
 
     // Reposiciona para rep DRUM_START_REP sem animação
     setTimeout(() => {
-      const resetIdx = DRUM_START_REP * 40 + finalGroup;
+      const resetIdx = DRUM_START_REP * 60 + finalGroup;
       drum.style.transition = 'none';
       drum.style.transform  = `translateY(${DRUM_OFFSET - resetIdx * ITEM_H}px)`;
       updateDrumHighlight(finalGroup, resetIdx);
